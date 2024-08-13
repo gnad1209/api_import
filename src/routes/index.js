@@ -2,7 +2,7 @@ const incommingDocumentRoute = require('../modules/incommingDocument/incommingDo
 const outgoingDocumentRoute = require('../modules/outgoingDocument/outgoingDocument.route');
 
 const routes = (app) => {
-    app.use('/incommingDocument/', incommingDocumentRoute)
-    app.use('/outgoingDocument/', outgoingDocumentRoute)
-}
-module.exports = routes
+  app.use('api/incommingDocument/', incommingDocumentRoute);
+  app.use('api/outgoingDocument/', outgoingDocumentRoute);
+};
+module.exports = routes;
