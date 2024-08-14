@@ -17,7 +17,7 @@ const upload = multer({
 });
 
 router.post(
-  '/khols/map-document-excel-v3',
+  '/incommingDocument',
   upload.fields([
     { name: 'importFile', maxCount: 1 },
     { name: 'zipFile', maxCount: 1 },
