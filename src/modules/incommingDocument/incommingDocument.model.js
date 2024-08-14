@@ -4,16 +4,16 @@ const mongoose = require('mongoose');
 
 const fileSchema = new mongoose.Schema(
   {
-    fullPath: {
+    name: {
       type: String,
       index: true,
     },
     filename: { type: String },
     path: { type: String },
-    size: { tye: String },
-    mimetype: { tye: String },
-    field: { tye: String },
-    user: { tye: String },
+    size: { type: Number },
+    mimetype: { type: String },
+    field: { type: String },
+    user: { type: String },
   },
   {
     collection: 'File',

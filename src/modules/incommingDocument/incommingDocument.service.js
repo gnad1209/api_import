@@ -4,8 +4,21 @@ const fsPromises = require('fs').promises;
 const CLIENT_KHOLS = 'DHVB';
 const File = require('./incommingDocument.model');
 const Profile = require('../../models/profile.model');
+const Document = require('../../models/document.model');
+const fileManager = require('../../models/fileManager.model');
 const axios = require('axios');
 const { PDFDocument } = require('pdf-lib');
+const XLSX = require('xlsx');
+const {
+  removeVietnameseTones,
+  countPagePdf,
+  existsPath,
+  createSortIndex,
+  deleteFolderAndContent,
+  decompressFile,
+} = require('./common');
+// const { createWriteStream, createReadStream } = require('fs');
+// const { createUnzip } = require('zlib');
 /**
  * Nhận thông tin file nén và file import, lưu file, giải nén
  * @param {Object} importFile Thông tin file import, từ model File
@@ -26,7 +39,6 @@ const createFolderAndSaveFilesV2 = async (importFile, compressedFile, config = {
     const newImportFilePath = path.join(folderToSave, importFileName);
     const compressedFilePath = path.join(firstUploadFolder, compressedFileName);
     const newCompressedFilePath = path.join(folderToSave, compressedFileName);
-    console.log('compressedFilePath', compressedFilePath);
 
     const [checkSaveFolder, checkImportFile, checkZipFile] = await Promise.all([
       existsPath(folderToSave),
@@ -50,7 +62,7 @@ const createFolderAndSaveFilesV2 = async (importFile, compressedFile, config = {
     // if (os == 'win32') {
     //   await unzipFileWindow(compressedFilePath, folderToSave);
     // } else {
-    await unzipFile(compressedFilePath, folderToSave);
+    // await decompressFile(compressedFilePath, folderToSave);
     // }
     // await unzipFile(compressedFilePath, folderToSave); // tạm thời comment
     console.log('Thư mục lưu: ', folderToSave);
@@ -69,32 +81,19 @@ const createFolderAndSaveFilesV2 = async (importFile, compressedFile, config = {
  */
 const getDataFromExcelFile = async (file, check = false) => {
   try {
-    const fileUrl = 'https://administrator.lifetek.vn:233/api/files/66bc544d181ca41279b2adf9'; // dùng tạm
-    if (check) {
-      const fileCheck = await File.findById(file._id);
-      if (!fileCheck) {
-        throw new Error('Không tìm thấy file');
-      }
-    }
+    // Đọc file Excel từ Buffer
+    const workbook = XLSX.read(file, { type: 'buffer' });
 
-    // const fileUrl = process.env.BASE_URL + file._id;
+    // Lấy danh sách các sheet trong file
+    const sheetNames = workbook.SheetNames;
 
-    const readFileExcelUrl = process.env.READ_EXCEL_URL;
-    const request = await axios.post(readFileExcelUrl, null, {
-      params: {
-        pageIndex: 0,
-        typeData: 'raw',
-        docUrl: fileUrl,
-      },
-    });
+    // Chuyển đổi nội dung sheet đầu tiên thành JSON
+    const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]);
 
-    if (request && request.data && Array.isArray(request.data)) {
-      return request.data;
-    }
-    return [];
+    return sheetData; // Trả về dữ liệu dạng JSON
   } catch (error) {
-    console.log('Lỗi lấy dữ liệu từ file excel');
-    throw error;
+    console.error('Lỗi khi đọc file Excel:', error.message);
+    return null;
   }
 };
 
@@ -125,6 +124,11 @@ const dataProcessing = async (data, folderPath, config = {}) => {
     }
 
     // bắt đầu xử lý
+    const files = fs.readdirSync(folderPath);
+    const fileList = files.filter((file) => {
+      const filePath = path.join(folderPath, file);
+      return fs.statSync(filePath).isFile();
+    });
 
     for (row of data) {
       if (row.rowIndex === 0) continue;
@@ -144,8 +148,10 @@ const dataProcessing = async (data, folderPath, config = {}) => {
 
       let saveFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${filenameToSet}`;
       saveFilename = saveFilename.length > 255 ? saveFilename.substring(0, 255) : saveFilename;
-
-      const filenameToCopyPath = path.join(folderPath, initFilename);
+      let filenameToCopyPath = '';
+      fileList.map((file) => {
+        filenameToCopyPath = path.join(folderPath, file);
+      });
       const saveModelFilePath = path.join(__dirname, '..', '..', 'uploads', defaultClientId, saveFilename);
 
       let profileFilter = {
@@ -174,6 +180,7 @@ const dataProcessing = async (data, folderPath, config = {}) => {
           createdBy: defaultCreator,
           planId: defaultPlan,
           sortIndex: createSortIndex(profileYear, profileIndex),
+          // sortIndex: createSortIndex(),
         });
         console.log('Tao moi ho so: ', profile._id);
       } else {
@@ -189,7 +196,8 @@ const dataProcessing = async (data, folderPath, config = {}) => {
         abstract: documentAbstract,
       });
       if (!document) {
-        const pageNumber = await countPagePdf(filenameToCopyPath);
+        // const pageNumber = await countPagePdf(filenameToCopyPath);
+        const pageNumber = 10;
         document = new Document({
           status: 1,
           profileId: profile._id,
@@ -213,7 +221,7 @@ const dataProcessing = async (data, folderPath, config = {}) => {
       if (profile.historyOrg) document.historyOrg = profile.historyOrg;
       if (profile.room) document.room = profile.room;
 
-      const fileToSave = new fileManagerModel({
+      const fileToSave = new fileManager({
         fullPath: documentFullPath, // đường dẫn dầy đủ tới file
         mid: document._id, // id của bản ghi chiều 03 -> khols
         name: `${filenameToSet}`, // tên file đặt tên theo ý muốn (từ dữ liệu excel)
@@ -269,73 +277,41 @@ const dataProcessing = async (data, folderPath, config = {}) => {
   }
 };
 
-/**
- * Kiểm tra xem đường dẫn có tồn tại hay không
- * @param {string} pathToCheck - Đường dẫn cần kiểm tra
- * @returns {boolean} - True nếu đường dẫn tồn tại, False nếu không tồn tại
- */
-function existsPath(pathToCheck) {
-  try {
-    // Sử dụng fs.statSync để kiểm tra xem đường dẫn có tồn tại không
-    const stats = fs.statSync(pathToCheck);
-    return true; // Trả về true nếu đường dẫn tồn tại
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      return false; // Trả về false nếu đường dẫn không tồn tại
-    } else {
-      throw err; // Ném ra lỗi khác nếu có
-    }
-  }
-}
-
-function unzipFile(compressedFilePath, folderToSave) {}
-
-function removeVietnameseTones(str) {
-  if (!str || typeof str !== 'string') return str;
-  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a');
-  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, 'e');
-  str = str.replace(/ì|í|ị|ỉ|ĩ/g, 'i');
-  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, 'o');
-  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, 'u');
-  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, 'y');
-  str = str.replace(/đ/g, 'd');
-  str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, 'A');
-  str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, 'E');
-  str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, 'I');
-  str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, 'O');
-  str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, 'U');
-  str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, 'Y');
-  str = str.replace(/Đ/g, 'D');
-  // Some system encode vietnamese combining accent as individual utf-8 characters
-  // Một vài bộ encode coi các dấu mũ, dấu chữ như một kí tự riêng biệt nên thêm hai dòng này
-  str = str.replace(/\u0300|\u0301|\u0303|\u0309|\u0323/g, ''); // ̀ ́ ̃ ̉ ̣  huyền, sắc, ngã, hỏi, nặng
-  str = str.replace(/\u02C6|\u0306|\u031B/g, ''); // ˆ ̆ ̛  Â, Ê, Ă, Ơ, Ư
-  // Remove extra spaces
-  // Bỏ các khoảng trắng liền nhau
-  str = str.replace(/ + /g, ' ');
-  str = str.trim();
-  // Remove punctuations
-  // Bỏ dấu câu, kí tự đặc biệt
-  // str = str.replace(/!|@|%|\^|\*|\(|\)|\+|\=|\<|\>|\?|\/|,|\.|\:|\;|\'|\"|\&|\#|\[|\]|~|\$|_|`|-|{|}|\||\\/g, ' ');
-  return str.toLowerCase();
-}
-
-async function countPagePdf(file) {
-  try {
-    // Load the PDF document
-    const pdfDoc = await PDFDocument.load(file);
-    // Get the number of pages
-    const numPages = await pdfDoc.getPageCount();
-    return numPages;
-  } catch (error) {
-    console.error('Error counting PDF pages:', error);
-    throw error;
-  }
-}
-
-function createSortIndex(profileYear, profileIndex) {
-  const sortIndex = profileYear * 10000 + profileIndex;
-  return sortIndex;
-}
-
 module.exports = { createFolderAndSaveFilesV2, getDataFromExcelFile, dataProcessing };
+
+// /**
+//  * Nếu không có sẵn fileUrl, tải file theo đường dẫn đầu vào. Lấy đường dẫn đó gọi đến JAVdocument. CHỈ SỬ DỤNG VỚI FILE IMPORT HOẶC CÁC FILE UPLOAD VỚI MODEL FILE
+//  * @param {Path} file
+//  * @param {URL} [fileUrl]
+//  * @returns Dữ liệu từ file data
+//  */
+// const getDataFromExcelFile = async (file, check = false) => {
+//   try {
+//     const fileUrl = 'https://administrator.lifetek.vn:233/api/files/66bc544d181ca41279b2adf9'; // dùng tạm
+//     if (check) {
+//       const fileCheck = await File.findById(file._id);
+//       if (!fileCheck) {
+//         throw new Error('Không tìm thấy file');
+//       }
+//     }
+
+//     // const fileUrl = process.env.BASE_URL + file._id;
+
+//     const readFileExcelUrl = process.env.READ_EXCEL_URL;
+//     const request = await axios.post(readFileExcelUrl, null, {
+//       params: {
+//         pageIndex: 0,
+//         typeData: 'raw',
+//         docUrl: fileUrl,
+//       },
+//     });
+
+//     if (request && request.data && Array.isArray(request.data)) {
+//       return request.data;
+//     }
+//     return [];
+//   } catch (error) {
+//     console.log('Lỗi lấy dữ liệu từ file excel');
+//     throw error;
+//   }
+// };

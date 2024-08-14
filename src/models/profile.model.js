@@ -11,9 +11,9 @@ const profileSchema = new mongoose.Schema(
     profileYear: { type: Date },
     binderCode: { type: String },
     organizationUnitId: { type: String },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+    createdBy: { type: String, index: true },
     planId: { type: String },
-    sortIndex: { type: Number },
+    sortIndex: { type: String },
   },
   {
     collection: 'Profile',

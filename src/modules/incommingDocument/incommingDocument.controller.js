@@ -72,8 +72,9 @@ const readAndMapFileFromExcelV3 = async (req, res, next) => {
     );
 
     const excelData = await service.getDataFromExcelFile(uploadedImportFile);
+    console.log(uploadedImportFile);
 
-    const data = await service.dataProcessing(excelData, folderSaveFiles, processDataConfig);
+    // const data = await service.dataProcessing(excelData, folderSaveFiles, processDataConfig);
     // console.log('=================== DONE ===================');
 
     return res.json({ status: 1 });
