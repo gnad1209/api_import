@@ -6,37 +6,14 @@ const fileSchema = new mongoose.Schema(
   {
     fullPath: {
       type: String,
-      required: true,
       index: true,
     },
-    mid: { type: String },
-    name: { type: String }, // tên file đặt tên theo ý muốn (từ dữ liệu excel)
-    parentPath: { type: String }, // pwd thư mục lưu file
-    username: { type: String }, // fix cứng id của user thực hiện upload
-    isFile: { type: Boolean }, // fix cứng giá trị true
-    type: { type: String }, // gần như là pdf
-    realName: { type: String }, // tên file thực tế lưu trên 03, là tên được gen với chuỗi random
-    clientId: { type: String }, // fix cứng, k quan tâm
-    code: { type: String }, //
-    mimetype: { type: String }, //
-    nameRoot: { type: String }, // như trên
-    createdBy: { type: String }, // fix cứng
-    smartForm: { type: String },
-    isFileSync: { type: Boolean },
-    folderChild: { type: Boolean },
-    isStarred: { type: Boolean },
-    isEncryption: { type: Boolean },
-    shares: { type: Array },
-    isConvert: { type: Boolean },
-    internalTextIds: { type: Array },
-    canDelete: { type: Boolean },
-    canEdit: { type: Boolean },
-    status: { type: Number },
-    isApprove: { type: Boolean },
-    public: { type: Number },
-    permissions: { type: Array },
-    users: { type: Array },
-    hasChild: { type: Boolean },
+    filename: { type: String },
+    path: { type: String },
+    size: { tye: String },
+    mimetype: { tye: String },
+    field: { tye: String },
+    user: { tye: String },
   },
   {
     collection: 'File',

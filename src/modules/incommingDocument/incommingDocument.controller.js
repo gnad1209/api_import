@@ -1,11 +1,10 @@
 const File = require('./incommingDocument.model');
-const path = require('path');
-const service = require('./incommingDocument.service');
+const Client = require('../../models/client.model');
 
 const readAndMapFileFromExcelV3 = async (req, res, next) => {
   try {
     console.log('Xu ly import file');
-    const service = require('./fileManager.service');
+    const service = require('./incommingDocument.service');
     let { importFile, zipFile } = req.files;
     if (importFile.length < 1 || zipFile.length < 1) {
       return res.status(400).json({
@@ -39,7 +38,7 @@ const readAndMapFileFromExcelV3 = async (req, res, next) => {
         } else {
           client.usedStorage += totalSize;
         }
-        const saved = await client.save();
+        await client.save();
       }
     }
 
@@ -75,7 +74,7 @@ const readAndMapFileFromExcelV3 = async (req, res, next) => {
     const excelData = await service.getDataFromExcelFile(uploadedImportFile);
 
     const data = await service.dataProcessing(excelData, folderSaveFiles, processDataConfig);
-    console.log('=================== DONE ===================');
+    // console.log('=================== DONE ===================');
 
     return res.json({ status: 1 });
   } catch (error) {
