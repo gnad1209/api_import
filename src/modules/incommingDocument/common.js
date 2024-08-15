@@ -2,7 +2,8 @@ const unzipper = require('unzipper');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const { PDFDocument } = require('pdf-lib');
-const pako = require('pako');
+const XLSX = require('xlsx');
+const path = require('path');
 
 function removeVietnameseTones(str) {
   if (!str || typeof str !== 'string') return str;
@@ -151,6 +152,20 @@ async function decompressFile(compressedFilePath, outputFilePath) {
     console.error('Error decompressing and saving file:', err);
   }
 }
+
+function readExcelDataAsArray(buffer) {
+  try {
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    return data;
+  } catch (error) {
+    console.error('Error reading Excel buffer:', error.message);
+    return null;
+  }
+}
+
 module.exports = {
   removeVietnameseTones,
   countPagePdf,
@@ -158,4 +173,5 @@ module.exports = {
   createSortIndex,
   deleteFolderAndContent,
   decompressFile,
+  readExcelDataAsArray,
 };
