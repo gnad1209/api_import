@@ -1,5 +1,7 @@
 const File = require('./incommingDocument.model');
 const Client = require('../../models/client.model');
+const documentModel = require('../../models/document.model');
+const fileManagerModel = require('../../models/fileManager.model');
 
 const readAndMapFileFromExcelV3 = async (req, res, next) => {
   try {
@@ -71,13 +73,12 @@ const readAndMapFileFromExcelV3 = async (req, res, next) => {
       uploadedZipFile.toObject(),
     );
 
-    const excelData = await service.getDataFromExcelFile(uploadedImportFile);
-    console.log(uploadedImportFile);
+    const excelData = await service.getDataFromExcelFile(uploadedImportFile.path);
 
     const data = await service.dataProcessing(excelData, folderSaveFiles, processDataConfig);
     // console.log('=================== DONE ===================');
 
-    return res.json({ status: 1 });
+    return res.json({ status: 1, data: data });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -87,4 +88,36 @@ const readAndMapFileFromExcelV3 = async (req, res, next) => {
   }
 };
 
-module.exports = { readAndMapFileFromExcelV3 };
+async function updateFile(req, res, next) {
+  try {
+    let attachments = [];
+    const { docIds, files } = req.body;
+    docIds.map(async (docId, index) => {
+      const docFilter = { _id: docId, isImportFile: true };
+      if (!Array.isArray(files[index])) {
+        throw new Error('Phần tử của files phải là 1 mảng');
+      }
+      if (typeof docId !== 'string' || docId.trim() === '') {
+        throw new Error('Phần tử của docId phải là 1 chuỗi có giá trị');
+      }
+      if (typeof files[index] !== 'object' || files[index] === null || Object.keys(files[index]).length < 0) {
+        throw new Error('Cấu hình file phải là đối tượng gồm id và name');
+      }
+      if (docIds.length !== files.length) {
+        throw new Error('Số lượng bản ghi có file đính kèm không trùng với số lượng file tải lên');
+      }
+      const documentary = await documentModel.findOneAndUpdate(
+        docFilter,
+        { $set: { files: files[index] } },
+        { new: true },
+      );
+    });
+
+    // const saved = await documentary.save();
+    return res.json({ status: 1 });
+  } catch (e) {
+    next(e);
+  }
+}
+
+module.exports = { readAndMapFileFromExcelV3, updateFile };
