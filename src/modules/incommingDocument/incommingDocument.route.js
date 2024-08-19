@@ -26,10 +26,6 @@ router.post(
   incommingDocumentCtrl.readAndMapFileFromExcelV3,
 );
 
-router.post(
-  '/upload',
-  upload.fields([{ name: 'zipFile', maxCount: 1 }]),
-  incommingDocumentCtrl.readAndMapFileFromExcelV3,
-);
+router.post('/updateFile', incommingDocumentCtrl.updateFile);
 
 module.exports = router;
