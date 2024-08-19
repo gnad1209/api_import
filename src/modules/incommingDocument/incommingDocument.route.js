@@ -17,19 +17,6 @@ const upload = multer({
   limits: { fileSize: 1 * 1024 * 1024 * 1024 },
 });
 
-router.post(
-  '/import',
-  upload.fields([
-    { name: 'importFile', maxCount: 1 },
-    { name: 'zipFile', maxCount: 1 },
-  ]),
-  incommingDocumentCtrl.readAndMapFileFromExcelV3,
-);
-
-router.post(
-  '/upload',
-  upload.fields([{ name: 'zipFile', maxCount: 1 }]),
-  incommingDocumentCtrl.readAndMapFileFromExcelV3,
-);
+router.post('/import', upload.single('zipFile'), incommingDocumentCtrl.importDataInZipFile);
 
 module.exports = router;
