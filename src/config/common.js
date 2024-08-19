@@ -4,6 +4,8 @@ const fsPromises = require('fs').promises;
 const { PDFDocument } = require('pdf-lib');
 const XLSX = require('xlsx');
 const path = require('path');
+const AdmZip = require('adm-zip');
+const fs_extra = require('fs-extra');
 
 function removeVietnameseTones(str) {
   if (!str || typeof str !== 'string') return str;
@@ -119,38 +121,36 @@ function existsPath(pathToCheck) {
   }
 }
 
-async function decompressFile(compressedFilePath, outputFilePath) {
-  try {
-    // Read the compressed file
-    const compressedData = await fs.promises.readFile(compressedFilePath);
+async function extractZipFile(zipFilePath, folderToSave, folderToSaveAttachment) {
+  // Kiểm tra xem các thư mục đích đã tồn tại hay chưa, nếu chưa thì tạo
+  await fs_extra.ensureDir(folderToSave);
+  await fs_extra.ensureDir(folderToSaveAttachment);
 
-    // Decompress the data
-    let uncompressedData;
-    try {
-      uncompressedData = pako.inflate(compressedData, { to: 'string' });
-    } catch (err) {
-      if (err.message && err.message.includes('incorrect header check')) {
-        console.error('Incorrect header check:', err);
-        console.error('The file may not be a valid gzipped file.');
-        return;
-      } else {
-        throw err;
+  // Giải nén tệp zipFile
+  const zip = new AdmZip(zipFilePath);
+  const zipEntries = zip.getEntries();
+
+  zipEntries.forEach((entry) => {
+    const entryName = entry.entryName;
+    const filePath = path.resolve(folderToSave, entryName);
+
+    if (entry.isDirectory) {
+      // Nếu entry là một thư mục, thì tạo thư mục
+      fs_extra.ensureDirSync(filePath);
+    } else {
+      // Nếu entry là một file, thì ghi file ra đĩa
+      zip.extractEntryTo(entry, folderToSave, false, true);
+
+      // Kiểm tra nếu file là file nén (attachment.zip) thì giải nén nó
+      if (path.extname(entryName) === '.zip') {
+        const attachmentZipPath = filePath;
+        const attachmentZip = new AdmZip(attachmentZipPath);
+        attachmentZip.extractAllTo(folderToSaveAttachment, true);
       }
     }
+  });
 
-    // Create the output directory if it doesn't exist
-    const outputDir = path.dirname(outputFilePath);
-    if (!fs.existsSync(outputDir)) {
-      await fs.promises.mkdir(outputDir, { recursive: true });
-    }
-
-    // Save the decompressed file
-    await fs.promises.writeFile(outputFilePath, uncompressedData);
-
-    console.log('File decompressed and saved successfully:', outputFilePath);
-  } catch (err) {
-    console.error('Error decompressing and saving file:', err);
-  }
+  console.log('Giải nén hoàn thành!');
 }
 
 function readExcelDataAsArray(buffer) {
@@ -172,6 +172,6 @@ module.exports = {
   existsPath,
   createSortIndex,
   deleteFolderAndContent,
-  decompressFile,
+  extractZipFile,
   readExcelDataAsArray,
 };

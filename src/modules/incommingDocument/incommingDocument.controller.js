@@ -10,7 +10,8 @@ const importDataInZipFile = async (req, res, next) => {
     if (!zipFile) {
       return res.status(400).json({ status: 0, message: 'Upload file failed' });
     }
-    console.log(zipFile);
+    const dataAfterUnZip = await service.unzipFile(zipFile);
+    console.log(dataAfterUnZip);
   } catch (e) {
     return res.json(e);
   }
