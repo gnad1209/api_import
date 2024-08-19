@@ -90,9 +90,11 @@ const readAndMapFileFromExcelV3 = async (req, res, next) => {
 
 async function updateFile(req, res, next) {
   try {
-    let attachments = [];
     const { docIds, files } = req.body;
-    docIds.map(async (docId, index) => {
+    if (docIds.length !== files.length) {
+      throw new Error('Số lượng bản ghi có file đính kèm không trùng với số lượng file tải lên');
+    }
+    const promises = docIds.map(async (docId, index) => {
       const docFilter = { _id: docId, isImportFile: true };
       if (!Array.isArray(files[index])) {
         throw new Error('Phần tử của files phải là 1 mảng');
@@ -100,21 +102,15 @@ async function updateFile(req, res, next) {
       if (typeof docId !== 'string' || docId.trim() === '') {
         throw new Error('Phần tử của docId phải là 1 chuỗi có giá trị');
       }
-      if (typeof files[index] !== 'object' || files[index] === null || Object.keys(files[index]).length < 0) {
-        throw new Error('Cấu hình file phải là đối tượng gồm id và name');
-      }
-      if (docIds.length !== files.length) {
-        throw new Error('Số lượng bản ghi có file đính kèm không trùng với số lượng file tải lên');
-      }
-      const documentary = await documentModel.findOneAndUpdate(
-        docFilter,
-        { $set: { files: files[index] } },
-        { new: true },
-      );
-    });
+      // if (typeof files[index] !== 'object' || files[index] === null || Object.keys(files[index]).length < 0) {
+      //   throw new Error('Cấu hình file phải là đối tượng gồm id và name');
+      // }
 
+      return documentModel.findOneAndUpdate(docFilter, { $set: { files: files[index] } }, { new: true });
+    });
+    const attachments = await Promise.all(promises);
     // const saved = await documentary.save();
-    return res.json({ status: 1 });
+    return res.json({ status: 1, attachments });
   } catch (e) {
     next(e);
   }
