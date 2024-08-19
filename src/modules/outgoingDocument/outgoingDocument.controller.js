@@ -1,11 +1,12 @@
 const FileService = require('./file.service');
 const ClientService = require('./client.service');
 const ExcelService = require('./excel.service');
+const BookService = require('./book.service');
 const DataProcessingService = require('./data.processing.service');
 
 // Multer configuration
 
-const readAndMapFileFromExcelV3 = async (req, res, next) => {
+const readMapFileFromExcelV3AnhCreatedBook = async (req, res, next) => {
   console.log('Files:', req.files);
   try {
     console.log('Xu ly import file');
@@ -48,7 +49,7 @@ const readAndMapFileFromExcelV3 = async (req, res, next) => {
     // Process data
     const data = await DataProcessingService.dataProcessing(excelData, folderSaveFiles, processDataConfig);
     console.log('=================== DONE ===================');
-    console.log(data);
+    // console.log(data);
 
     return res.json({ status: 1, data: data });
   } catch (error) {
@@ -61,5 +62,5 @@ const readAndMapFileFromExcelV3 = async (req, res, next) => {
 };
 
 module.exports = {
-  readAndMapFileFromExcelV3,
+  readMapFileFromExcelV3AnhCreatedBook,
 };

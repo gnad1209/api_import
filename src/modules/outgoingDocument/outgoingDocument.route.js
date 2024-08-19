@@ -31,7 +31,7 @@ router.post(
     { name: 'importFile', maxCount: 1 },
     { name: 'zipFile', maxCount: 1 },
   ]),
-  ctl.readAndMapFileFromExcelV3,
+  ctl.readMapFileFromExcelV3AnhCreatedBook,
 );
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const Profile = require('./models/profile.model');
 const Document = require('./models/document.model');
 const fileManagerModel = require('./models/filemanager.model');
+const BookModel = require('./models/book.model');
 const path = require('path');
 const mongoose = require('mongoose');
 const fs = require('fs');
@@ -153,6 +154,26 @@ class DataProcessingService {
           users: [],
           hasChild: false,
         });
+
+        const bookToSave = new BookModel({
+          toBook: row.column0,
+          abstractNote: row.column1,
+          urgencyLevel: row.column2,
+          senderUnit: row.column3,
+          documentType: row.column4,
+          releaseDate: row.column5,
+          releaseNo: row.column6,
+          documentField: row.column7,
+          privateLevel: row.column8,
+          currentNote: row.column9,
+          incommingDocument: row.column10,
+          tasks: row.column11,
+          autoReleaseCheck: row.column12,
+          caSignCheck: row.column13,
+          currentRole: row.column14,
+          nextRole: row.column15,
+        });
+
         document.fileId = fileToSave._id;
         document.originalFileId = fileToSave._id;
 
@@ -166,7 +187,7 @@ class DataProcessingService {
         console.log('Duong dan tai lieu da luu: ', fileToSave.fullPath);
         console.log('document == document ', document);
 
-        const saveResult = await Promise.all([fileToSave.save(), document.save(), profile.save()]);
+        const saveResult = await Promise.all([fileToSave.save(), document.save(), profile.save(), bookToSave.save()]);
         result.push(saveResult);
         // xóa folder tiết kiệm bộ nhớ sau khi sử dụng. File zip và file excel còn tồn tại bên file, file sử udnjg đã có trong upload và sử dụng được
       }
@@ -231,7 +252,6 @@ async function countPagePdf(fullPath) {
   }
 }
 
-
 /**
  * Function Import from outsource -- không cần quan tâm lắm đến hàm này vì nó sử dụng cho bên khác
  * @param {*} profileYear
@@ -248,6 +268,5 @@ function createSortIndex(profileYear, profileNumber) {
     '' + (9999 - (!isNaN(parseInt(profileYear.replace(/\D/g, ''))) ? parseInt(profileYear.replace(/\D/g, '')) : 9999));
   return `0${yearNo}_${profileNumber.padStart(20, '0')}`;
 }
-
 
 module.exports = DataProcessingService;

@@ -1,5 +1,5 @@
 const axios = require('axios');
-
+const xlsx = require('xlsx');
 class ExcelService {
   static async getDataFromExcelFile(file, check = false) {
     try {
@@ -12,6 +12,39 @@ class ExcelService {
           throw new Error('Không tìm thấy file');
         }
       }
+      // Đọc file .xlsx
+      const workbook = xlsx.readFile(file.path);
+
+      // Lấy tên sheet đầu tiên
+      const sheetName = workbook.SheetNames[0];
+
+      // Lấy dữ liệu từ sheet và bỏ qua dòng đầu tiên
+      const worksheet = workbook.Sheets[sheetName];
+
+      // Chuyển đổi dữ liệu sheet sang JSON, bắt đầu từ dòng thứ 2
+      const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 1 });
+      // Mảng để chứa dữ liệu đã chuyển đổi
+      const Data = [];
+      // Duyệt từng dòng, bắt đầu từ dòng thứ 2
+      jsonData.forEach((row, rowIndex) => {
+        // Kiểm tra nếu dòng có bất kỳ cột nào có dữ liệu
+        const hasData = row.some((column) => column !== undefined && column !== null && column !== '');
+
+        if (hasData) {
+          const rowData = { rowIndex: rowIndex + 2 }; // +2 để khớp với dòng trong Excel
+
+          // Duyệt từng cột trong dòng
+          row.forEach((value, columnIndex) => {
+            if (value !== undefined && value !== null && value !== '') {
+              rowData[`column${columnIndex}`] = value;
+            }
+          });
+
+          // Thêm dòng đã xử lý vào mảng Data
+          Data.push(rowData);
+        }
+      });
+      console.log('======dataa', Data);
 
       // const fileUrl = process.env.BASE_URL + file._id;
       // const readFileExcelUrl = process.env.READ_EXCEL_URL;
@@ -27,12 +60,7 @@ class ExcelService {
       //   return request.data;
       // }
 
-
-      const testData = [
-        { rowIndex: 1, column0: 211, column1: 'Sổ VB đến', column2: 'thng:Thường, khn:Khẩn, thng-khn:Thượng khẩn, ha-tc:Hỏa tốc', column3: '10/07/2022', column4: '1', column5: 'file1.pdf', column6: 'TênFile1' },
-        { rowIndex: 2, column0: 241, column1: 'Sổ VB đến 2', column2: 'Số văn bản', column3: '12/09/2021', column4: '2', column5: 'file2.pdf', column6: 'TênFile2' },
-      ];
-      return testData;
+      return Data;
     } catch (error) {
       console.log('Lỗi lấy dữ liệu từ file excel');
       throw error;
