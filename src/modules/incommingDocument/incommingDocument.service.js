@@ -62,6 +62,13 @@ const unzipFile = async (zipFile) => {
 
     const pathExcelFile = await getPathFile(folderToSave);
 
+    // const os = process.platform;
+    // if (os == 'win32') {
+    //   await unzipFileWindow(compressedFilePath, folderToSave);
+    // } else {
+    // await decompressFile(compressedFilePath, folderToSave);
+    // }
+    // await unzipFile(compressedFilePath, folderToSave); // tạm thời comment
     console.log('Thư mục lưu: ', folderToSave);
     return { folderToSave, pathExcelFile };
   } catch (error) {
@@ -76,10 +83,35 @@ const unzipFile = async (zipFile) => {
  * @param {URL} [fileUrl]
  * @returns Dữ liệu từ file data
  */
-const getDataFromExcelFile = async (filePath, check = false) => {
+// const getDataFromExcelFile = async (filePath, check = false) => {
+//   try {
+//     if (check) {
+//       const fileCheck = await File.findById({ path: filePath });
+//       if (!fileCheck) {
+//         throw new Error('Không tìm thấy file');
+//       }
+//     }
+//     // Đọc file từ đường dẫn và chuyển đổi nó thành Buffer
+//     const fileBuffer = fs.readFileSync(filePath);
+
+//     // Đọc dữ liệu từ file Excel
+//     const dataArray = readExcelDataAsArray(fileBuffer);
+
+//     if (!dataArray) {
+//       return [];
+//     }
+//     return dataArray;
+//   } catch (error) {
+//     console.error('Lỗi khi đọc file Excel:', error.message);
+//     return null;
+//   }
+// };
+async function getDataFromExcelFile(file, check = false) {
   try {
+    const fileUrl = 'https://administrator.lifetek.vn:233/api/files/66bc544d181ca41279b2adf9'; // dùng tạm
     if (check) {
-      const fileCheck = await File.findById({ path: filePath });
+      const FileModel = mongoose.models.File;
+      const fileCheck = await FileModel.findById(file._id);
       if (!fileCheck) {
         throw new Error('Không tìm thấy file');
       }
@@ -93,12 +125,12 @@ const getDataFromExcelFile = async (filePath, check = false) => {
     if (!dataArray) {
       return [];
     }
-    return dataArray;
+    return [];
   } catch (error) {
-    console.error('Lỗi khi đọc file Excel:', error.message);
-    return null;
+    console.log('Lỗi lấy dữ liệu từ file excel');
+    throw error;
   }
-};
+}
 
 const listFileAttachments = async (filesArrInput, folderPath) => {
   try {
@@ -148,6 +180,59 @@ const processData = async (data, folderPath, config = {}) => {
     });
     console.log('fileList', fileList);
 
+    // for (row of data) {
+    //   if (row.rowIndex === 0) continue;
+    //   const initFilename = row.column5 || '';
+    //   // refix - khi mà không ai để ý đến việc đặt tên file trên hệ thống; sửa tên file thành dạng thao tác được ☠☠
+    //   let plainName = removeVietnameseTones(row[1]);
+    //   const filenameToSet = plainName || ''; // tên file mong muốn đặt
+    //   // const filenameToSet = row.column6 || ''; // tên file mong muốn đặt
+
+    //   let saveFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${filenameToSet}`;
+    //   saveFilename = saveFilename.length > 255 ? saveFilename.substring(0, 255) : saveFilename;
+    //   let document = new Document({
+    //     toBook: 'tobook',
+    //   });
+    //   const filenameToCopyPath = path.join(folderPath, initFilename);
+    //   const saveModelFilePath = path.join(__dirname, '..', '..', '..', 'uploads', defaultClientId, saveFilename);
+    //   const documentFullPath = path.join(folderPath, '..', saveFilename);
+    //   // const toBook = row[0] || 0;
+    //   const fileToSave = new fileManager({
+    //     fullPath: documentFullPath, // đường dẫn dầy đủ tới file
+    //     mid: '1', // id của bản ghi chiều 03 -> khols
+    //     name: `${filenameToSet}`, // tên file đặt tên theo ý muốn (từ dữ liệu excel)
+    //     parentPath: `${folderPath}`, // pwd thư mục lưu file
+    //     username: defaultUploadAccount, // fix cứng id của user thực hiện upload
+    //     isFile: true, // fix cứng giá trị true
+    //     type: '.pdf', // gần như là pdf
+    //     realName: saveFilename, // tên file thực tế lưu trên 03, là tên được gen với chuỗi random
+    //     clientId: defaultClientId, // fix cứng, k quan tâm
+    //     code: 'company', //
+    //     mimetype: 'application/pdf', //
+    //     nameRoot: saveFilename, // như trên
+    //     createdBy: defaultCreator, // fix cứng
+    //     smartForm: '',
+    //     isFileSync: false,
+    //     folderChild: false,
+    //     isStarred: false,
+    //     isEncryption: false,
+    //     shares: [],
+    //     isConvert: false,
+    //     internalTextIds: [],
+    //     canDelete: true,
+    //     canEdit: true,
+    //     status: 1,
+    //     isApprove: false,
+    //     public: 0,
+    //     permissions: [],
+    //     users: [],
+    //     hasChild: false,
+    //   });
+    //   // document.files = { id: fileToSave._id, name: fileToSave.name };
+
+    //   saveResult = await Promise.all([await fileToSave.save()]);
+    //   result.push(saveResult);
+    // }
     for (row of data) {
       if (row.rowIndex === 0) continue;
 
@@ -280,7 +365,104 @@ const processData = async (data, folderPath, config = {}) => {
       //   document.originalFileId = fileToSave._id;
       // });
 
-      saveResult = await Promise.all([await document.save(), receiver.save()]);
+      let profile = await Profile.findOne(profileFilter);
+      if (!profile) {
+        profile = new Profile({
+          status: 1,
+          kanbanStatus: 1,
+          profileTitle,
+          title: profileTitle,
+          profileYear,
+          binderCode,
+          organizationUnitId: defaultUploadOrg,
+          createdBy: defaultCreator,
+          planId: defaultPlan,
+          sortIndex: createSortIndex(profileYear, profileIndex),
+          // sortIndex: createSortIndex(),
+        });
+        console.log('Tao moi ho so: ', profile._id);
+      } else {
+        console.log('Cap nhap ho so: ', profile._id);
+      }
+
+      const documentFullPath = path.join(folderPath, '..', saveFilename);
+
+      let document = await Document.findOne({
+        status: 1,
+        profileId: profile._id,
+        profileIndex,
+        abstract: documentAbstract,
+      });
+      if (!document) {
+        // const pageNumber = await countPagePdf(filenameToCopyPath);
+        const pageNumber = 10;
+        document = new Document({
+          status: 1,
+          profileId: profile._id,
+          profileIndex: profileIndex,
+          organizationUnitId: defaultUploadOrg,
+          createdBy: defaultCreator,
+          abstract: documentAbstract,
+          page_count: pageNumber,
+        });
+        console.log('Tao moi van ban: ', document._id);
+        profile.pageQuantity = (+profile.pageQuantity || 0) + pageNumber;
+        console.log('Doc page count: ', pageNumber);
+        const sheetCount = Math.round(pageNumber / 2) || 0;
+        profile.sheetQuantity += sheetCount;
+        profile.documentQuantity += 1;
+      } else {
+        console.log('Cap nhap van ban: ', document._id);
+      }
+      if (profile.code) document.code = profile.code;
+      if (profile.codeOrg) document.codeOrg = profile.codeOrg;
+      if (profile.historyOrg) document.historyOrg = profile.historyOrg;
+      if (profile.room) document.room = profile.room;
+
+      const fileToSave = new fileManager({
+        fullPath: documentFullPath, // đường dẫn dầy đủ tới file
+        mid: document._id, // id của bản ghi chiều 03 -> khols
+        name: `${filenameToSet}`, // tên file đặt tên theo ý muốn (từ dữ liệu excel)
+        parentPath: `${folderPath}`, // pwd thư mục lưu file
+        username: defaultUploadAccount, // fix cứng id của user thực hiện upload
+        isFile: true, // fix cứng giá trị true
+        type: '.pdf', // gần như là pdf
+        realName: saveFilename, // tên file thực tế lưu trên 03, là tên được gen với chuỗi random
+        clientId: defaultClientId, // fix cứng, k quan tâm
+        code: 'company', //
+        mimetype: 'application/pdf', //
+        nameRoot: saveFilename, // như trên
+        createdBy: defaultCreator, // fix cứng
+        smartForm: '',
+        isFileSync: false,
+        folderChild: false,
+        isStarred: false,
+        isEncryption: false,
+        shares: [],
+        isConvert: false,
+        internalTextIds: [],
+        canDelete: true,
+        canEdit: true,
+        status: 1,
+        isApprove: false,
+        public: 0,
+        permissions: [],
+        users: [],
+        hasChild: false,
+      });
+      document.fileId = fileToSave._id;
+      document.originalFileId = fileToSave._id;
+
+      // console.log('=======================================================');
+      // const checkk = await existsPath(filenameToCopyPath);
+      // console.log('Đường dẫn file copy co ton tai?: ', checkk);
+
+      // console.log('=======================================================');
+
+      await fsPromises.copyFile(filenameToCopyPath, saveModelFilePath);
+      console.log('Duong dan tai lieu da luu: ', fileToSave.fullPath);
+
+      saveResult = await Promise.all([await fileToSave.save(), await profile.save()]);
       result.push(saveResult);
       // xóa folder tiết kiệm bộ nhớ sau khi sử dụng. File zip và file excel còn tồn tại bên file, file sử udnjg đã có trong upload và sử dụng được
     }
