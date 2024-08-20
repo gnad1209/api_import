@@ -71,7 +71,7 @@ const unzipFile = async (zipFile) => {
 };
 
 /**
- * Nếu không có sẵn fileUrl, tải file theo đường dẫn đầu vào. Lấy đường dẫn đó gọi đến JAVdocument. CHỈ SỬ DỤNG VỚI FILE IMPORT HOẶC CÁC FILE UPLOAD VỚI MODEL FILE
+ * lấy dữ liệu từ file excel
  * @param {Path} file
  * @param {URL} [fileUrl]
  * @returns Dữ liệu từ file data
@@ -120,6 +120,13 @@ const listFileAttachments = async (filesArrInput, folderPath) => {
   }
 };
 
+/**
+ * Xử lý dữ liệu
+ * @param {Array} data Mảng dữ liệu đọc từ excel
+ * @param {*} folderPath đường dẫn tới folder chứa các file văn bản và file import
+ * @param {*} config Cấu hình tùy chọn
+ * @returns dữ liệu đã xử lý
+ */
 const processData = async (data, folderPath, config = {}) => {
   try {
     const result = [];
