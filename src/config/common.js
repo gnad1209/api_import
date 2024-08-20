@@ -4,8 +4,6 @@ const fsPromises = require('fs').promises;
 const { PDFDocument } = require('pdf-lib');
 const XLSX = require('xlsx');
 const path = require('path');
-const AdmZip = require('adm-zip');
-const fs_extra = require('fs-extra');
 
 function removeVietnameseTones(str) {
   if (!str || typeof str !== 'string') return str;
@@ -121,37 +119,60 @@ function existsPath(pathToCheck) {
   }
 }
 
-async function extractZipFile(zipFilePath, folderToSave, folderToSaveAttachment) {
-  // Kiểm tra xem các thư mục đích đã tồn tại hay chưa, nếu chưa thì tạo
-  await fs_extra.ensureDir(folderToSave);
-  await fs_extra.ensureDir(folderToSaveAttachment);
+const extractFile = async (filePath, outputDir) => {
+  await fs
+    .createReadStream(filePath)
+    .pipe(unzipper.Extract({ path: outputDir }))
+    .promise();
+};
 
-  // Giải nén tệp zipFile
-  const zip = new AdmZip(zipFilePath);
-  const zipEntries = zip.getEntries();
+const extractAttachmentFile = async (filePath, outputDir) => {
+  await fs.readdir(filePath, (err, files) => {
+    if (err) {
+      return console.error('Không thể quét thư mục: ' + err);
+    }
 
-  zipEntries.forEach((entry) => {
-    const entryName = entry.entryName;
-    const filePath = path.resolve(folderToSave, entryName);
+    // Lọc các file có phần mở rộng là .zip hoặc .rar
+    const archiveFiles = files.filter((file) => {
+      const ext = path.extname(file).toLowerCase();
+      return ext === '.zip' || ext === '.rar';
+    });
 
-    if (entry.isDirectory) {
-      // Nếu entry là một thư mục, thì tạo thư mục
-      fs_extra.ensureDirSync(filePath);
+    if (archiveFiles.length > 0) {
+      console.log('Các file nén tìm thấy:', archiveFiles);
+      archiveFiles.forEach(async (file) => {
+        const fullPath = path.join(filePath, file);
+        //giải nén và xóa file nén tệp đính kèm
+        await extractFile(fullPath, outputDir);
+        fs.unlinkSync(fullPath);
+      });
     } else {
-      // Nếu entry là một file, thì ghi file ra đĩa
-      zip.extractEntryTo(entry, folderToSave, false, true);
-
-      // Kiểm tra nếu file là file nén (attachment.zip) thì giải nén nó
-      if (path.extname(entryName) === '.zip') {
-        const attachmentZipPath = filePath;
-        const attachmentZip = new AdmZip(attachmentZipPath);
-        attachmentZip.extractAllTo(folderToSaveAttachment, true);
-      }
+      console.log('Không tìm thấy file .zip hoặc .rar nào trong thư mục');
     }
   });
+};
 
-  console.log('Giải nén hoàn thành!');
-}
+const getPathFile = async (folderPath) => {
+  let filePathAfterExtract = [];
+
+  try {
+    const files = await fs.promises.readdir(folderPath);
+
+    for (const file of files) {
+      const filePath = path.join(folderPath, file);
+      const stats = await fs.promises.stat(filePath);
+
+      if (stats.isFile() && !file.endsWith('.zip')) {
+        filePathAfterExtract.push(filePath);
+      }
+    }
+
+    return filePathAfterExtract;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+};
 
 function readExcelDataAsArray(buffer) {
   try {
@@ -172,6 +193,8 @@ module.exports = {
   existsPath,
   createSortIndex,
   deleteFolderAndContent,
-  extractZipFile,
+  extractFile,
   readExcelDataAsArray,
+  extractAttachmentFile,
+  getPathFile,
 };

@@ -5,6 +5,7 @@ const CLIENT_KHOLS = 'DHVB';
 const File = require('./incommingDocument.model');
 const Profile = require('../../models/profile.model');
 const Document = require('../../models/document.model');
+const Receiver = require('../../models/receiver.model');
 const fileManager = require('../../models/fileManager.model');
 const axios = require('axios');
 const { PDFDocument } = require('pdf-lib');
@@ -15,8 +16,10 @@ const {
   existsPath,
   createSortIndex,
   deleteFolderAndContent,
-  extractZipFile,
+  extractFile,
   readExcelDataAsArray,
+  extractAttachmentFile,
+  getPathFile,
 } = require('../../config/common');
 /**
  * Nhận thông tin file nén và file import, lưu file, giải nén
@@ -36,7 +39,7 @@ const unzipFile = async (zipFile) => {
       'uploads',
       `${CLIENT_KHOLS}`,
       `import_${time}`,
-      `attachment`,
+      `attachments`,
     );
     const firstUploadFolder = path.join(__dirname, '..', '..', 'files');
 
@@ -54,17 +57,239 @@ const unzipFile = async (zipFile) => {
       throw new Error('Không tồn tại file đã upload');
     }
     // Giải nén file input
-    await extractZipFile(compressedFilePath, folderToSave, folderToSaveaAtachment);
+    await extractFile(compressedFilePath, folderToSave);
+    await extractAttachmentFile(folderToSave, folderToSaveaAtachment);
+
+    const pathExcelFile = await getPathFile(folderToSave);
 
     console.log('Thư mục lưu: ', folderToSave);
-    return folderToSave;
+    return { folderToSave, pathExcelFile };
   } catch (error) {
     console.log('Lỗi khi thực hiện hàm tạo folder');
     throw error;
   }
 };
 
-const getDataFromExcelFile = async () => {};
+/**
+ * Nếu không có sẵn fileUrl, tải file theo đường dẫn đầu vào. Lấy đường dẫn đó gọi đến JAVdocument. CHỈ SỬ DỤNG VỚI FILE IMPORT HOẶC CÁC FILE UPLOAD VỚI MODEL FILE
+ * @param {Path} file
+ * @param {URL} [fileUrl]
+ * @returns Dữ liệu từ file data
+ */
+const getDataFromExcelFile = async (filePath, check = false) => {
+  try {
+    if (check) {
+      const fileCheck = await File.findById({ path: filePath });
+      if (!fileCheck) {
+        throw new Error('Không tìm thấy file');
+      }
+    }
+    // Đọc file từ đường dẫn và chuyển đổi nó thành Buffer
+    const fileBuffer = fs.readFileSync(filePath);
 
-const processData = () => {};
-module.exports = { unzipFile };
+    // Đọc dữ liệu từ file Excel
+    const dataArray = readExcelDataAsArray(fileBuffer);
+
+    if (!dataArray) {
+      return [];
+    }
+    return dataArray;
+  } catch (error) {
+    console.error('Lỗi khi đọc file Excel:', error.message);
+    return null;
+  }
+};
+
+const listFileAttachments = async (filesArrInput, folderPath) => {
+  try {
+    const files = await fs.promises.readdir(`${folderPath}/attachments`);
+    const arrAttachment = files.map((file) => path.join(`${folderPath}/attachments`, file));
+    const set1 = new Set(filesArrInput);
+    const set2 = new Set(files);
+    if (!Array.isArray(filesArrInput)) {
+      if (files.includes(filesArrInput.trim())) {
+        const fileSelected = Array.of(filesArrInput);
+        return fileSelected;
+      }
+    } else {
+      const fileSelected = Array.from(set1.filter((item) => set2.has(item)));
+      return fileSelected;
+    }
+  } catch (e) {
+    return e;
+  }
+};
+
+const processData = async (data, folderPath, config = {}) => {
+  try {
+    const result = [];
+    // lấy biến config hoặc môi trường
+    const defaultPlan = config.plan ? config.plan : process.env.KHOLS_UPLOAD_PLAN;
+    const defaultUploadAccount = config.account ? config.account : process.env.KHOLS_UPLOAD_ACCOUNT;
+    const defaultCreator = config.creator ? config.creator : process.env.KHOLS_UPLOAD_ACCOUNT_ID;
+    const defaultUploadOrg = config.organizationUnit ? config.organizationUnit : process.env.KHOLS_UPLOAD_ACCOUNT_ORG;
+    const defaultClientId = config.clientId ? config.clientId : process.env.CLIENT_KHOLS;
+
+    // check tồn tại thư mục xử lý
+    if (!Array.isArray(data)) {
+      throw new Error('Sai dữ liệu đầu vào');
+    }
+    const checkFolder = await existsPath(folderPath);
+    if (!checkFolder) {
+      throw new Error('Thư mục xử lý không tồn tại');
+    }
+    const folderAttachmentPath = folderPath + '\\attachments';
+
+    // bắt đầu xử lý
+    const files = await fs.promises.readdir(`${folderAttachmentPath}`);
+    const fileList = files.filter((file) => {
+      const filePath = path.join(`${folderAttachmentPath}`, file);
+      return fs.statSync(filePath).isFile();
+    });
+    console.log('fileList', fileList);
+
+    for (row of data) {
+      if (row.rowIndex === 0) continue;
+
+      // const toBook = row[0] || 0;
+      const toBook = `abc${row.rowIndex}`;
+      const toBook_en = removeVietnameseTones(toBook);
+      const abstractNote = row[1] || 'a';
+      const abstractNote_en = removeVietnameseTones(abstractNote);
+      const bookDocumentIdName = row[2] || ''; //////////////////
+      const urgencyLevel = row[3] || '';
+      const urgencyLevel_en = removeVietnameseTones(urgencyLevel);
+      const toBookCode = row[4] || '';
+      const toBookCode_en = removeVietnameseTones(toBookCode);
+      const senderUnit = row[5] || 'v';
+      const senderUnit_en = removeVietnameseTones(senderUnit);
+      const files = row[6] || '';
+      const bookDocumentId = row[7] || '';
+      const secondBook = row[8] || '';
+      const receiverUnit = row[9] || 'b';
+      const processorUnits = row[10] || '';
+      const documentType = row[11] || '';
+      const documentType_en = removeVietnameseTones(documentType);
+      const documentField = row[12] || '';
+      const documentField_en = removeVietnameseTones(documentField);
+      const receiveMethod = row[13] || '';
+      const receiveMethod_en = removeVietnameseTones(receiveMethod);
+      const privateLevel = row[14] || '';
+      const privateLevel_en = removeVietnameseTones(privateLevel);
+      const currentNote = row[15] || '';
+      const currentRole = row[16] || '';
+      const nextRole = row[17] || '';
+      const letterType = row[18] || '';
+      const processAuthorString = row[19] || '';
+      const toBookCodeDepartment = row[20] || '';
+
+      if (!toBook) {
+        throw new Error('thiếu số văn bản');
+      }
+      if (!abstractNote) {
+        throw new Error('thiếu trích yếu');
+      }
+      if (!senderUnit) {
+        throw new Error('thiếu đơn vị gửi');
+      }
+      if (!receiverUnit) {
+        throw new Error('thiếu đơn vị nhận');
+      }
+      let receiver = await Receiver.findOne({ name: receiverUnit });
+      if (!receiver) {
+        receiver = new Receiver({ name: receiverUnit });
+      }
+      let document = await Document.findOne({ toBook });
+      if (document) {
+        throw new Error('đã tồn tại số văn bản');
+      }
+      document = new Document({
+        toBook,
+        toBook_en,
+        abstractNote,
+        abstractNote_en,
+        bookDocumentIdName,
+        urgencyLevel,
+        urgencyLevel_en,
+        toBookCode,
+        toBookCode_en,
+        senderUnit,
+        senderUnit_en,
+        files,
+        bookDocumentId,
+        secondBook,
+        receiverUnit: receiver._id,
+        processorUnits,
+        documentType,
+        documentType_en,
+        documentField,
+        documentField_en,
+        receiveMethod,
+        receiveMethod_en,
+        privateLevel,
+        privateLevel_en,
+        currentNote,
+        currentRole,
+        nextRole,
+        letterType,
+        processAuthorString,
+        toBookCodeDepartment,
+      });
+
+      // const arrFiles = files
+      //   .trim()
+      //   .split(',')
+      //   .map((item) => item.trim());
+      // const arrFileAttachment = await listFileAttachments(arrFiles, folderPath);
+      // if (!arrFileAttachment) {
+      //   return;
+      // }
+      // arrFileAttachment.map((item) => {
+      //   const fileToSave = new fileManager({
+      //     fullPath: documentFullPath, // đường dẫn dầy đủ tới file
+      //     mid: document._id, // id của bản ghi chiều 03 -> khols
+      //     name: `${filenameToSet}`, // tên file đặt tên theo ý muốn (từ dữ liệu excel)
+      //     parentPath: `${folderPath}`, // pwd thư mục lưu file
+      //     username: defaultUploadAccount, // fix cứng id của user thực hiện upload
+      //     isFile: true, // fix cứng giá trị true
+      //     type: '.pdf', // gần như là pdf
+      //     realName: saveFilename, // tên file thực tế lưu trên 03, là tên được gen với chuỗi random
+      //     clientId: defaultClientId, // fix cứng, k quan tâm
+      //     code: 'company', //
+      //     mimetype: 'application/pdf', //
+      //     nameRoot: saveFilename, // như trên
+      //     createdBy: defaultCreator, // fix cứng
+      //     smartForm: '',
+      //     isFileSync: false,
+      //     folderChild: false,
+      //     isStarred: false,
+      //     isEncryption: false,
+      //     shares: [],
+      //     isConvert: false,
+      //     internalTextIds: [],
+      //     canDelete: true,
+      //     canEdit: true,
+      //     status: 1,
+      //     isApprove: false,
+      //     public: 0,
+      //     permissions: [],
+      //     users: [],
+      //     hasChild: false,
+      //   });
+      //   document.fileId = fileToSave._id;
+      //   document.originalFileId = fileToSave._id;
+      // });
+
+      saveResult = await Promise.all([await document.save(), receiver.save()]);
+      result.push(saveResult);
+      // xóa folder tiết kiệm bộ nhớ sau khi sử dụng. File zip và file excel còn tồn tại bên file, file sử udnjg đã có trong upload và sử dụng được
+    }
+    console.log('Xóa đường dẫn: ', folderPath);
+    return result;
+  } catch (error) {
+    console.log('Lỗi khi xử lý dữ liệu');
+    throw error;
+  }
+};
+
+module.exports = { unzipFile, getDataFromExcelFile, processData, listFileAttachments };

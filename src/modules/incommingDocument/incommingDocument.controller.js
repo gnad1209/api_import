@@ -11,7 +11,22 @@ const importDataInZipFile = async (req, res, next) => {
       return res.status(400).json({ status: 0, message: 'Upload file failed' });
     }
     const dataAfterUnZip = await service.unzipFile(zipFile);
-    console.log(dataAfterUnZip);
+
+    // const uploadedImportFile = await File.create({
+    //   name: zipFile.originalname,
+    //   filename: zipFile.filename,
+    //   path: zipFile.path,
+    //   size: zipFile.size,
+    //   mimetype: zipFile.mimetype,
+    //   field: zipFile.fieldname,
+    //   user: zipFile.user,
+    // });
+
+    const dataFromExcelFile = await service.getDataFromExcelFile(dataAfterUnZip.pathExcelFile[0]);
+
+    const data = await service.processData(dataFromExcelFile, dataAfterUnZip.folderToSave);
+
+    return res.status(200).json({ status: 1, data: data });
   } catch (e) {
     return res.json(e);
   }
