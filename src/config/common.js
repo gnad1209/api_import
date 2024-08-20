@@ -71,6 +71,7 @@ function createSortIndex(profileYear, profileNumber) {
   return `0${yearNo}_${profileNumber.padStart(20, '0')}`;
 }
 
+// xóa folder trong project
 function deleteFolderAndContent(folderPath) {
   // Kiểm tra xem đường dẫn có tồn tại không
   if (!fs.existsSync(folderPath)) {
@@ -119,6 +120,12 @@ function existsPath(pathToCheck) {
   }
 }
 
+/**
+ * Giải nén file zip
+ * @param {string} filePath - filePath cần đc giải nén
+ * @param {string} outputDir - path lưu file sau khi giải nén
+ * @returns {boolean} - True nếu đường dẫn tồn tại, False nếu không tồn tại
+ */
 const extractFile = async (filePath, outputDir) => {
   await fs
     .createReadStream(filePath)
@@ -126,6 +133,12 @@ const extractFile = async (filePath, outputDir) => {
     .promise();
 };
 
+/**
+ * Giải nén file attachment
+ * @param {string} filePath - filePath cần đc giải nén
+ * @param {string} outputDir - path lưu file sau khi giải nén
+ * @returns {boolean} - True nếu đường dẫn tồn tại, False nếu không tồn tại
+ */
 const extractAttachmentFile = async (filePath, outputDir) => {
   await fs.readdir(filePath, (err, files) => {
     if (err) {
