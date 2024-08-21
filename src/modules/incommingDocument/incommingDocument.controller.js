@@ -1,121 +1,74 @@
-const File = require('./incommingDocument.model');
-const Client = require('../../models/client.model');
-const documentModel = require('../../models/document.model');
-const fileManagerModel = require('../../models/fileManager.model');
 const service = require('./incommingDocument.service');
+const path = require('path');
 
 const importDataInZipFile = async (req, res, next) => {
   try {
+    // khởi tạo biến lưu file zip,path file zip, clientId, folder lưu file sau khi giải nén
     const zipFile = req.file;
+    const clientId = req.query.clientId;
+
+    const time = new Date() * 1;
+
+    const firstUploadFolder = path.join(__dirname, '..', '..', 'files');
+    const compressedFilePath = path.join(firstUploadFolder, zipFile.filename);
+    const folderToSave = path.join(__dirname, '..', '..', 'uploads', `${clientId}`, `import_${time}`);
+    const folderToSaveaAtachment = path.join(
+      __dirname,
+      '..',
+      '..',
+      'uploads',
+      `${clientId}`,
+      `import_${time}`,
+      `attachments`,
+    );
+
+    // kiểm tra file được tải lên chưa
     if (!zipFile) {
       return res.status(400).json({ status: 0, message: 'Upload file failed' });
     }
-    const dataAfterUnZip = await service.unzipFile(zipFile);
 
-    // const uploadedImportFile = await File.create({
-    //   name: zipFile.originalname,
-    //   filename: zipFile.filename,
-    //   path: zipFile.path,
-    //   size: zipFile.size,
-    //   mimetype: zipFile.mimetype,
-    //   field: zipFile.fieldname,
-    //   user: zipFile.user,
-    // });
+    //giải nén file zip đầu vào
+    const extractFileZip = await service.unzipFile(compressedFilePath, folderToSave);
+    if (!extractFileZip) {
+      return res.status(400).json({ status: 0, message: 'extract Failed' });
+    }
 
-    const dataFromExcelFile = await service.getDataFromExcelFile(dataAfterUnZip.pathExcelFile[0]);
+    // lấy path của file excel và path của file zip đính kèm còn lại
+    const objPath = await service.getPathOfChildFileZip(folderToSave);
 
-    const data = await service.processData(dataFromExcelFile, dataAfterUnZip.folderToSave);
+    // Kiểm tra dung lượng còn lại của client
+    if (clientId) {
+      const checkStorage = await service.checkStorage(objPath, clientId);
+      if (!checkStorage) {
+        return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
+      }
+    }
 
-    return res.status(200).json({ status: 1, data: data });
+    //giải nén file đính kèm
+    let extractFileAttachment = null;
+    if (objPath.zipFile) {
+      extractFileAttachment = await service.unzipFile(objPath.zipFile, folderToSaveaAtachment);
+    }
+
+    // lấy thông tin các file con trong file zip đính kèm(zipAttachmentFile) từ path vừa tìm đc
+    const dataFromAttachment = await service.getDataFromAttachment(folderToSaveaAtachment);
+    if (!dataFromAttachment) {
+      return res.status(400).json({ status: 0, message: 'get data attachments failed' });
+    }
+
+    // lấy dữ liệu file excel
+    const dataExcel = await service.getDataFromExcelFile(objPath.excelFile);
+    if (!dataExcel) {
+      return res.status(400).json({ status: 0, message: 'get data from excel file failed' });
+    }
+
+    //xử lý dữ liệu lưu các bản ghi vào db
+    const data = await service.processData(dataExcel, dataFromAttachment);
+
+    return res.status(200).json({ status: 1, data });
   } catch (e) {
-    return res.json(e);
+    return res.status(400).json(e);
   }
 };
-
-// const readAndMapFileFromExcelV3 = async (req, res, next) => {
-//   try {
-//     console.log('Xu ly import file');
-//     const service = require('./incommingDocument.service');
-//     let { importFile, zipFile } = req.files;
-//     if (importFile.length < 1 || zipFile.length < 1) {
-//       return res.status(400).json({
-//         status: 0,
-//         message: 'Upload files failed',
-//       });
-//     }
-//     const importFile0 = importFile[0];
-//     const zipFile0 = zipFile[0];
-//     const totalSize = importFile0.size + zipFile0.size;
-
-//     const processDataConfig = {};
-//     const { planId, uploaderId, profileId, organizationUnit, clientId } = req.query;
-//     // if (planId) processDataConfig.plan = planId;
-//     // if (uploaderId) processDataConfig.creator = uploaderId;
-//     // if (profileId) processDataConfig.profileId = profileId;
-//     // if (organizationUnit) processDataConfig.organizationUnit = organizationUnit;
-//     if (clientId) processDataConfig.clientId = clientId;
-
-//     if (clientId) {
-//       const client = await Client.findOne({ clientId });
-//       if (client) {
-//         if (client.storageCapacity) {
-//           const remainingStorage = client.storageCapacity - client.usedStorage;
-//           if (remainingStorage < totalSize) {
-//             return res.json({
-//               status: 0,
-//               message: 'Dung lượng còn lại không đủ',
-//             });
-//           }
-//         } else {
-//           client.usedStorage += totalSize;
-//         }
-//         await client.save();
-//       }
-//     }
-
-//     const [uploadedImportFile, uploadedZipFile] = await File.create([
-//       {
-//         name: importFile0.originalname,
-//         filename: importFile0.filename,
-//         path: importFile0.path,
-//         size: importFile0.size,
-//         mimetype: importFile0.mimetype,
-//         field: importFile0.fieldname,
-//         user: importFile0.user,
-//       },
-//       {
-//         name: zipFile0.originalname,
-//         filename: zipFile0.filename,
-//         path: zipFile0.path,
-//         size: zipFile0.size,
-//         mimetype: zipFile0.mimetype,
-//         field: zipFile0.fieldname,
-//         user: zipFile0.user,
-//       },
-//     ]);
-
-//     console.log(`Uploaded file ${uploadedImportFile.filename}: `, uploadedImportFile.path);
-//     console.log(`Uploaded file ${uploadedZipFile.filename}: `, uploadedZipFile.path);
-
-//     const folderSaveFiles = await service.createFolderAndSaveFilesV2(
-//       uploadedImportFile.toObject(),
-//       uploadedZipFile.toObject(),
-//     );
-
-//     // const excelData = await service.getDataFromExcelFile(uploadedImportFile.path);
-//     const excelData = await service.getDataFromExcelFile(uploadedImportFile);
-
-//     const data = await service.dataProcessing(excelData, folderSaveFiles, processDataConfig);
-//     // console.log('=================== DONE ===================');
-
-//     return res.json({ status: 1, data: data });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({
-//       status: 0,
-//       message: error.message,
-//     });
-//   }
-// };
 
 module.exports = { importDataInZipFile };
