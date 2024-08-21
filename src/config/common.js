@@ -4,6 +4,7 @@ const fsPromises = require('fs').promises;
 const { PDFDocument } = require('pdf-lib');
 const XLSX = require('xlsx');
 const path = require('path');
+const fsExtra = require('fs-extra');
 
 function removeVietnameseTones(str) {
   if (!str || typeof str !== 'string') return str;
@@ -35,70 +36,14 @@ function removeVietnameseTones(str) {
   return str.toLowerCase();
 }
 
-/**
- * Đếm số trang của file pdf với đường dẫn
- * Cài thêm thư viện pdf-lib
- * Đã có thư viện fs
- * @param {Path} fullPath Đường dẫn thực tới file tương ứng model FileManager
- * @returns
- */
-async function countPagePdf(fullPath) {
-  try {
-    const fileContents = await fsPromises.readFile(fullPath);
-    const _PDFInstance = await PDFDocument.load(fileContents);
-    const numberOfPages = _PDFInstance.getPages().length;
-    return numberOfPages;
-  } catch (error) {
-    console.log('Lỗi khi đếm số trang pdf');
-    throw error;
-  }
-}
-
-/**
- * Function Import from outsource -- không cần quan tâm lắm đến hàm này vì nó sử dụng cho bên khác
- * @param {*} profileYear
- * @param {*} profileNumber
- * @returns
- */
-function createSortIndex(profileYear, profileNumber) {
-  profileYear = typeof profileYear === 'string' && profileYear ? profileYear : '0000';
-  profileNumber = typeof profileNumber === 'string' ? profileNumber : '';
-  if (isNaN(profileYear)) {
-    return `1${profileYear}_${profileNumber.padStart(20, '0')}`;
-  }
-  const yearNo =
-    '' + (9999 - (!isNaN(parseInt(profileYear.replace(/\D/g, ''))) ? parseInt(profileYear.replace(/\D/g, '')) : 9999));
-  return `0${yearNo}_${profileNumber.padStart(20, '0')}`;
-}
-
 // xóa folder trong project
-function deleteFolderAndContent(folderPath) {
-  // Kiểm tra xem đường dẫn có tồn tại không
-  if (!fs.existsSync(folderPath)) {
-    return;
+async function deleteFolderAndContent(folderPath) {
+  try {
+    await fsPromises.unlink(folderPath);
+    console.log(`Đã xóa file: ${folderPath}`);
+  } catch (err) {
+    console.error('Error deleting file:', err);
   }
-
-  // Xóa tất cả các file bên trong thư mục
-  function deleteFiles(currentPath) {
-    const files = fs.readdirSync(currentPath);
-    for (const file of files) {
-      const filePath = path.join(currentPath, file);
-      if (fs.lstatSync(filePath).isDirectory()) {
-        // Nếu là thư mục, gọi đệ quy hàm để xóa nội dung bên trong
-        deleteFiles(filePath);
-      } else {
-        // Nếu là file, xóa file
-        fs.unlinkSync(filePath);
-      }
-    }
-  }
-
-  // Xóa tất cả các file bên trong thư mục
-  deleteFiles(folderPath);
-
-  // Xóa thư mục
-  fs.rmdirSync(folderPath);
-  console.log(`Đã xóa thư mục ${folderPath} và toàn bộ nội dung bên trong.`);
 }
 
 /**
@@ -120,73 +65,6 @@ function existsPath(pathToCheck) {
   }
 }
 
-/**
- * Giải nén file zip
- * @param {string} filePath - filePath cần đc giải nén
- * @param {string} outputDir - path lưu file sau khi giải nén
- * @returns {boolean} - True nếu đường dẫn tồn tại, False nếu không tồn tại
- */
-const extractFile = async (filePath, outputDir) => {
-  await fs
-    .createReadStream(filePath)
-    .pipe(unzipper.Extract({ path: outputDir }))
-    .promise();
-};
-
-/**
- * Giải nén file attachment
- * @param {string} filePath - filePath cần đc giải nén
- * @param {string} outputDir - path lưu file sau khi giải nén
- * @returns {boolean} - True nếu đường dẫn tồn tại, False nếu không tồn tại
- */
-const extractAttachmentFile = async (filePath, outputDir) => {
-  await fs.readdir(filePath, (err, files) => {
-    if (err) {
-      return console.error('Không thể quét thư mục: ' + err);
-    }
-
-    // Lọc các file có phần mở rộng là .zip hoặc .rar
-    const archiveFiles = files.filter((file) => {
-      const ext = path.extname(file).toLowerCase();
-      return ext === '.zip' || ext === '.rar';
-    });
-
-    if (archiveFiles.length > 0) {
-      console.log('Các file nén tìm thấy:', archiveFiles);
-      archiveFiles.forEach(async (file) => {
-        const fullPath = path.join(filePath, file);
-        //giải nén và xóa file nén tệp đính kèm
-        await extractFile(fullPath, outputDir);
-        fs.unlinkSync(fullPath);
-      });
-    } else {
-      console.log('Không tìm thấy file .zip hoặc .rar nào trong thư mục');
-    }
-  });
-};
-
-const getPathFile = async (folderPath) => {
-  let filePathAfterExtract = [];
-
-  try {
-    const files = await fs.promises.readdir(folderPath);
-
-    for (const file of files) {
-      const filePath = path.join(folderPath, file);
-      const stats = await fs.promises.stat(filePath);
-
-      if (stats.isFile() && !file.endsWith('.zip')) {
-        filePathAfterExtract.push(filePath);
-      }
-    }
-
-    return filePathAfterExtract;
-  } catch (err) {
-    console.error(err);
-    return [];
-  }
-};
-
 function readExcelDataAsArray(buffer) {
   try {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -200,14 +78,71 @@ function readExcelDataAsArray(buffer) {
   }
 }
 
+async function checkForSingleZipAndExcel(folderPath) {
+  try {
+    const files = await fsExtra.readdir(folderPath); // Đọc danh sách các file trong thư mục
+
+    let zipFile = null;
+    let excelFile = null;
+
+    // Duyệt qua các file để tìm file ZIP và file Excel
+    for (const file of files) {
+      const filePath = path.join(folderPath, file);
+      const stat = await fsExtra.stat(filePath);
+
+      // Kiểm tra nếu là file và định dạng của nó
+      if (stat.isFile()) {
+        if (path.extname(file) === '.zip') {
+          if (zipFile) {
+            throw new Error('Thư mục chứa nhiều hơn một file ZIP.');
+          }
+          zipFile = filePath;
+        } else if (['.xlsx', '.xls'].includes(path.extname(file))) {
+          if (excelFile) {
+            throw new Error('Thư mục chứa nhiều hơn một file Excel.');
+          }
+          excelFile = filePath;
+        }
+      }
+    }
+
+    // Kiểm tra kết quả và trả về thông tin
+    if (zipFile && excelFile) {
+      return { zipFile, excelFile };
+    } else if (!zipFile && !excelFile) {
+      return null;
+    } else if (!zipFile && excelFile) {
+      return { excelFile };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Đã xảy ra lỗi:', error);
+    throw error;
+  }
+}
+
+/**
+ * lấy những file được tạo mới
+ * @param {Array} dataExcel Mảng dữ liệu đọc từ excel
+ * @param {Array} dataAttachments Mảng dữ liệu đọc từ file zip đính kèm
+ * @param {*} config Cấu hình tùy chọn
+ * @returns trả về những bản ghi mới từ file excel
+ */
+function hasFileNameInArray(fileInfo, fileName, id) {
+  return fileInfo
+    .filter((file) => fileName.includes(file.name))
+    .map((file) => ({
+      ...file,
+      id_doc: id,
+    }));
+}
+
 module.exports = {
   removeVietnameseTones,
-  countPagePdf,
   existsPath,
-  createSortIndex,
   deleteFolderAndContent,
-  extractFile,
   readExcelDataAsArray,
-  extractAttachmentFile,
-  getPathFile,
+  checkForSingleZipAndExcel,
+  hasFileNameInArray,
 };
