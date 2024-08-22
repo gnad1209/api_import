@@ -48,7 +48,7 @@ const unzipFile = async (filePath, folderPath) => {
 
 /**
  * lấy thông tin về của 2 file sau khi giải nén
- * @param {String} foderPath path của folder muốn kiểm tra và lấy dữ liệu
+ * @param {String} foderPath path của folder vừa giải nén muốn kiểm tra và lấy dữ liệu
  * @returns trả về đối tượng gồm path của file excel và path của file zip đính kèm
  */
 const getPathOfChildFileZip = async (folderPath) => {
@@ -199,8 +199,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
       if (row.length === 0) continue;
       resultFile = [];
 
-      const toBook = row[0] || 0;
-      // const toBook = `abc`;
+      const toBook = Math.random(0, 100);
       const toBook_en = removeVietnameseTones(toBook);
       const abstractNote = row[1] || 'a';
       const abstractNote_en = removeVietnameseTones(abstractNote);
