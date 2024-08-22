@@ -38,10 +38,11 @@ const unzipFile = async (filePath, folderPath) => {
       .createReadStream(filePath)
       .pipe(unzipper.Extract({ path: folderPath }))
       .promise();
+    //xóa file zip
     await deleteFolderAndContent(filePath);
     return true;
   } catch (error) {
-    return error;
+    return false;
   }
 };
 
@@ -64,15 +65,19 @@ const getPathOfChildFileZip = async (folderPath) => {
     }
 
     return check;
-  } catch (e) {}
+  } catch (e) {
+    return e;
+  }
 };
 
 /**
  * Kiểm tra dung lượng còn lại có thể sử dụng ở client
+ * @param {String} objPath đối tượng chứa path file đính kèm và file excel
  * @param {String} clientId id của client để kiểm tra dung lượng
+ * @param {String} folderToSave đường dẫn lưu file sau khi giải nén
  * @returns trả về đối tượng gồm path của file excel và path của file zip đính kèm
  */
-const checkStorage = async (objPath, clientId) => {
+const checkStorage = async (objPath, clientId, folderToSave) => {
   try {
     // Kiểm tra folderPath có tồn tại không
     if (!objPath.excelFile) {
@@ -92,18 +97,23 @@ const checkStorage = async (objPath, clientId) => {
         if (client.storageCapacity) {
           const remainingStorage = client.storageCapacity - client.usedStorage;
           if (remainingStorage < totalSize) {
-            await Promise.all([deleteFolderAndContent(objPath.zipFile), deleteFolderAndContent(objPath.excelFile)]);
+            //xóa đường dẫn lưu file giải nén
+            await deleteFolderAndContent(folderToSave);
             throw new Error('Dung lượng còn lại ko đủ');
           } else {
-            client.usedStorage += totalSize;
+            client.usedStorage += client.storageCapacity;
           }
         }
         await client.save();
+      } else {
+        throw new Error('ClientId không tồn tại');
       }
     }
 
     return true;
-  } catch (e) {}
+  } catch (e) {
+    return e;
+  }
 };
 
 /**
@@ -137,10 +147,12 @@ const getDataFromAttachment = async (pathAttachmentsPath) => {
     );
     // trả về mảng file đính kèm được giải nén
     return fileInfo;
-  } catch (e) {}
+  } catch (e) {
+    return e;
+  }
 };
 
-async function getDataFromExcelFile(file, check = false) {
+async function getDataFromExcelFile(filePath, check = false) {
   try {
     //kiểm tra sự tồn tại path của file excel
     const checkPathExcelFile = await existsPath(filePath);
@@ -158,7 +170,9 @@ async function getDataFromExcelFile(file, check = false) {
     }
     //trả về dữ liệu của file excel dưới dạng mảng
     return dataArray;
-  } catch (error) {}
+  } catch (error) {
+    return error;
+  }
 }
 
 /**
