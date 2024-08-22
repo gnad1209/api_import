@@ -1,0 +1,18 @@
+{
+    "clientName": "Thunder Client",
+    "environmentName": "host",
+    "environmentId": "b395533d-f189-4960-8b52-f22f04499722",
+    "dateExported": "2024-08-22T01:14:40.213Z",
+    "version": "1.2",
+    "variables": [
+        {
+            "name": "host",
+            "value": "192.168.0.234"
+        },
+        {
+            "name": "clientId",
+            "value": "DHVB"
+        }
+    ],
+    "ref": "XS-ZcnnhDowavldc44nj_3wuBPd6rtCr2Xv8ouRcEcmHhugnkgyNrGCBb2PyLycm"
+}

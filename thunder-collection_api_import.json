@@ -1,0 +1,89 @@
+{
+    "clientName": "Thunder Client",
+    "collectionName": "api_import",
+    "collectionId": "29322c7a-90ae-48d2-9068-6aa419e306ba",
+    "dateExported": "2024-08-22T00:55:34.629Z",
+    "version": "1.2",
+    "folders": [],
+    "requests": [
+        {
+            "_id": "b14e395a-824a-4078-aea2-9e9fe424de48",
+            "colId": "29322c7a-90ae-48d2-9068-6aa419e306ba",
+            "containerId": "",
+            "name": "http://localhost:9000/api/incommingDocument/",
+            "url": "http://localhost:9000/api/incommingDocument/import?clientId=DHVB",
+            "method": "POST",
+            "sortNum": 10000,
+            "created": "2024-08-14T01:36:45.374Z",
+            "modified": "2024-08-21T07:29:02.013Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "planId",
+                    "value": "",
+                    "isDisabled": true,
+                    "isPath": false
+                },
+                {
+                    "name": "uploaderId",
+                    "value": "",
+                    "isDisabled": true,
+                    "isPath": false
+                },
+                {
+                    "name": "profileId",
+                    "value": "",
+                    "isDisabled": true,
+                    "isPath": false
+                },
+                {
+                    "name": "organizationUnit",
+                    "value": "",
+                    "isDisabled": true,
+                    "isPath": false
+                },
+                {
+                    "name": "clientId",
+                    "value": "DHVB",
+                    "isPath": false
+                }
+            ],
+            "body": {
+                "type": "formdata",
+                "raw": "",
+                "form": [],
+                "files": [
+                    {
+                        "name": "zipFile",
+                        "value": "c:\\Users\\Dell\\Downloads\\test.zip"
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "6dc8d8bb-6068-42d3-93a7-4759ce21b1cb",
+            "colId": "29322c7a-90ae-48d2-9068-6aa419e306ba",
+            "containerId": "",
+            "name": "test",
+            "url": "http://localhost:9000/api/incommingDocument/updateFile?clientId=DHVB",
+            "method": "POST",
+            "sortNum": 20000,
+            "created": "2024-08-14T01:38:38.849Z",
+            "modified": "2024-08-17T04:43:30.913Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "clientId",
+                    "value": "DHVB",
+                    "isPath": false
+                }
+            ],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"docIds\":[\"66bed5e143e53be173af8659\",\"66bed5e043e53be173af8652\",\"66bed5e043e53be173af864b\"],\n  \"files\":[\n    [{\"id\":\"66bc7afc7173864441aea5ec\",\"name\":\"123456\"},\n    {\"id\":\"66bc7a8bda186f825ccf165f\",\"name\":\"456\"}],\n    [{\"id\":\"66bc7afc7173864441aea5ec\",\"name\":\"abc\"}],\n  [{\"id\":\"66bc7ac84bbaf82c51912626\",\"name\":\"xyz\"}]]\n}",
+                "form": []
+            }
+        }
+    ],
+    "ref": "Shbuhkl2iP_F7Wiw8uhr_NqKcqIQs1PjcO800eX_9CqB_8A0-8UtsAvDgXlvN8eX5FBkG2y5rK8DN_-QJxdPTg"
+}

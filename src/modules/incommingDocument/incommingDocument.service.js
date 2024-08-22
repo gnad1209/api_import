@@ -140,34 +140,6 @@ const getDataFromAttachment = async (pathAttachmentsPath) => {
   } catch (e) {}
 };
 
-/**
- * lấy dữ liệu từ file excel
- * @param {Path} filePath đường dẫn tới file excel vừa được giải nén
- * @returns trả về dữ liệu của file excel dưới dạng mảng
- */
-// const getDataFromExcelFile = async (filePath, check = false) => {
-//   try {
-//     if (check) {
-//       const fileCheck = await File.findById({ path: filePath });
-//       if (!fileCheck) {
-//         throw new Error('Không tìm thấy file');
-//       }
-//     }
-//     // Đọc file từ đường dẫn và chuyển đổi nó thành Buffer
-//     const fileBuffer = fs.readFileSync(filePath);
-
-//     // Đọc dữ liệu từ file Excel
-//     const dataArray = readExcelDataAsArray(fileBuffer);
-
-//     if (!dataArray) {
-//       return [];
-//     }
-//     return dataArray;
-//   } catch (error) {
-//     console.error('Lỗi khi đọc file Excel:', error.message);
-//     return null;
-//   }
-// };
 async function getDataFromExcelFile(file, check = false) {
   try {
     //kiểm tra sự tồn tại path của file excel
