@@ -1,12 +1,10 @@
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
-const fsExtra = require('fs-extra');
-const Document = require('../../models/document.model');
+const Document = require('./incommingDocument.model');
 const Receiver = require('../../models/receiver.model');
 const fileManager = require('../../models/fileManager.model');
 const Client = require('../../models/client.model');
-const XLSX = require('xlsx');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
 
