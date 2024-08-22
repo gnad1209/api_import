@@ -289,7 +289,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
           toBookCode_en,
           senderUnit,
           senderUnit_en,
-          files: resultFile.map((file) => file._id),
+          files: resultFile.length >= 1 ? resultFile.map((file) => file._id) : null,
           bookDocumentId,
           secondBook,
           receiverUnit: receiver._id,
