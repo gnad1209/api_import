@@ -54,10 +54,13 @@ const importDataInZipFile = async (req, res, next) => {
       extractFileAttachment = await service.unzipFile(objPath.zipFile, folderToSaveaAtachment);
     }
 
-    // lấy thông tin các file con trong file zip đính kèm(zipAttachmentFile) từ path vừa tìm đc
-    const dataFromAttachment = await service.getDataFromAttachment(folderToSaveaAtachment);
-    if (!dataFromAttachment) {
-      return res.status(400).json({ status: 0, message: 'get data attachments failed' });
+    let dataFromAttachment = [];
+    if (extractFileAttachment) {
+      // lấy thông tin các file con trong file zip đính kèm(zipAttachmentFile) từ path vừa tìm đc
+      dataFromAttachment = await service.getDataFromAttachment(folderToSaveaAtachment);
+      if (!dataFromAttachment) {
+        return res.status(400).json({ status: 0, message: 'get data attachments failed' });
+      }
     }
 
     // lấy dữ liệu file excel

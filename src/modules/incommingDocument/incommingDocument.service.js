@@ -61,7 +61,8 @@ const getPathOfChildFileZip = async (folderPath) => {
     // kiểm tra thành phần có trong folder chứa các tệp giống định dạng đầu vào ko
     const check = await checkForSingleZipAndExcel(folderPath);
     if (!check) {
-      throw new Error('Cấu trúc folder sau khi giải nén không đúng định dạng');
+      return false;
+      // throw new Error('Cấu trúc folder sau khi giải nén không đúng định dạng');
     }
 
     return check;
@@ -99,9 +100,10 @@ const checkStorage = async (objPath, clientId, folderToSave) => {
           if (remainingStorage < totalSize) {
             //xóa đường dẫn lưu file giải nén
             await deleteFolderAndContent(folderToSave);
-            throw new Error('Dung lượng còn lại ko đủ');
+            return false;
+            // throw new Error('Dung lượng còn lại ko đủ');
           } else {
-            client.usedStorage += client.storageCapacity;
+            client.usedStorage += totalSize;
           }
         }
         await client.save();
@@ -166,7 +168,7 @@ async function getDataFromExcelFile(filePath, check = false) {
     const dataArray = readExcelDataAsArray(fileBuffer);
 
     if (!dataArray) {
-      return [];
+      return false;
     }
     //trả về dữ liệu của file excel dưới dạng mảng
     return dataArray;
@@ -194,10 +196,11 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
     //lặp lấy dữ liệu của file excel
     let resultFile;
     for (row of dataExcel) {
-      if (row.rowIndex === 0) continue;
+      if (row.length === 0) continue;
       resultFile = [];
-      // const toBook = row[0] || 0;
-      const toBook = `abc${row.rowIndex}`;
+
+      const toBook = row[0] || 0;
+      // const toBook = `abc`;
       const toBook_en = removeVietnameseTones(toBook);
       const abstractNote = row[1] || 'a';
       const abstractNote_en = removeVietnameseTones(abstractNote);
@@ -247,23 +250,25 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
         throw new Error('thiếu đơn vị nhận');
       }
       // kiểm tra trường files có tồn tại và phần tử nào thuộc file đính kèm ko
-      const arrFileAttachments = await hasFileNameInArray(dataAttachments, arrFiles);
-      // lặp mảng file vừa lấy được để thêm mới vào db
-      for (const file of arrFileAttachments) {
-        let existingFile = await fileManager.findOne({ name: file.name, fullPath: file.fullPath });
+      if (dataAttachments) {
+        const arrFileAttachments = await hasFileNameInArray(dataAttachments, arrFiles);
+        // lặp mảng file vừa lấy được để thêm mới vào db
+        for (const file of arrFileAttachments) {
+          let existingFile = await fileManager.findOne({ name: file.name, fullPath: file.fullPath });
 
-        if (!existingFile) {
-          // Nếu file chưa tồn tại, tạo một bản ghi mới
-          existingFile = new fileManager({
-            ...file,
-          });
-        } else {
-          // Nếu file đã tồn tại, cập nhật thông tin của nó
-          Object.assign(existingFile, file);
+          if (!existingFile) {
+            // Nếu file chưa tồn tại, tạo một bản ghi mới
+            existingFile = new fileManager({
+              ...file,
+            });
+          } else {
+            // Nếu file đã tồn tại, cập nhật thông tin của nó
+            Object.assign(existingFile, file);
+          }
+          // Lưu file (bản ghi mới hoặc cập nhật)
+          await existingFile.save();
+          resultFile.push(existingFile);
         }
-        // Lưu file (bản ghi mới hoặc cập nhật)
-        await existingFile.save();
-        resultFile.push(existingFile);
       }
 
       let receiver = await Receiver.findOne({ name: receiverUnit });
@@ -287,7 +292,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
           toBookCode_en,
           senderUnit,
           senderUnit_en,
-          files: resultFile,
+          files: resultFile.map((file) => file._id),
           bookDocumentId,
           secondBook,
           receiverUnit: receiver._id,
@@ -308,6 +313,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
           toBookCodeDepartment,
         });
       }
+
       // lưu dữ liệu từ file excel thành bản ghi mới
       let [saveDocument] = await Promise.all([await document.save(), receiver.save()]);
       result.push(saveDocument);
