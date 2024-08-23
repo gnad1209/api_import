@@ -187,7 +187,6 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
     //lặp lấy dữ liệu của file excel
     let resultFile;
     let resultDocs = [];
-    let resultReceiver = [];
     for (row of dataExcel) {
       if (row.length === 0) continue;
       resultFile = [];
@@ -311,7 +310,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
     }
     let saveDocument = await Document.insertMany(resultDocs);
     // trả về những bản ghi mới từ file excel
-    return { saveDocument, resultFile };
+    return { saveDocument };
   } catch (error) {
     return error;
   }
