@@ -44,7 +44,7 @@ class ExcelService {
           Data.push(rowData);
         }
       });
-      console.log('======dataa', Data);
+      // console.log('======dataa', Data);
 
       // const fileUrl = process.env.BASE_URL + file._id;
       // const readFileExcelUrl = process.env.READ_EXCEL_URL;

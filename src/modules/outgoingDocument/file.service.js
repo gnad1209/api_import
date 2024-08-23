@@ -14,8 +14,9 @@ class FileService {
     return config;
   }
 
-  static async uploadFiles(importFile, zipFile) {
-    return await File.create([
+  static async uploadFiles(importFile, zipFile, unzipData) {
+    // Khởi tạo mảng các đối tượng file cần tạo
+    const filesToCreate = [
       {
         name: importFile.originalname,
         filename: importFile.filename,
@@ -34,7 +35,30 @@ class FileService {
         field: zipFile.fieldname,
         user: zipFile.user,
       },
-    ]);
+    ];
+
+    unzipData.forEach((file) => {
+      filesToCreate.push({
+        name: file.name || '',
+        filename: file.filename || '',
+        path: file.path || '',
+        size: file.size || 0,
+        mimetype: file.mimetype || '',
+        field: '',
+        user: importFile.user,
+      });
+    });
+
+    // Tạo các file trong cơ sở dữ liệu
+    const createdFiles = await File.create(filesToCreate);
+
+    // Trả về mảng với từng phần tử tương ứng
+    return [
+      createdFiles[0], // File import
+      createdFiles[1], // File zip
+      createdFiles.slice(2), // Tất cả các file từ unzipData
+    ];
+    
   }
 
   static async createFolderAndSaveFilesV2(importFile, compressedFile, config = {}) {
@@ -44,6 +68,7 @@ class FileService {
 
       const importFileName = importFile.filename;
       const compressedFileName = compressedFile.filename;
+      // Đường dẫn tới thư mục lưu trữ
       const folderToSave = path.join(__dirname, '..', 'uploads', `${defaultClientId}`, `import_${time}`);
       const firstUploadFolder = path.join(__dirname, '..', 'files');
 
@@ -66,13 +91,22 @@ class FileService {
 
       await fsPromise.mkdir(folderToSave, { recursive: true });
       // Kiểm tra xem file nguồn có tồn tại không
-      if (!(await fsPromise.access(importFilePath).then(() => true).catch(() => false))) {
+      if (
+        !(await fsPromise
+          .access(importFilePath)
+          .then(() => true)
+          .catch(() => false))
+      ) {
         throw new Error(`File không tồn tại: ${importFilePath}`);
       }
-      if (!(await fsPromise.access(compressedFilePath).then(() => true).catch(() => false))) {
+      if (
+        !(await fsPromise
+          .access(compressedFilePath)
+          .then(() => true)
+          .catch(() => false))
+      ) {
         throw new Error(`File không tồn tại: ${compressedFilePath}`);
       }
-
 
       await fsPromise.copyFile(importFilePath, newImportFilePath);
       await fsPromise.copyFile(compressedFilePath, newCompressedFilePath);

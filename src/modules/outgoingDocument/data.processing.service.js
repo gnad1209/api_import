@@ -156,22 +156,22 @@ class DataProcessingService {
         });
 
         const bookToSave = new BookModel({
-          toBook: row.column0,
-          abstractNote: row.column1,
-          urgencyLevel: row.column2,
-          senderUnit: row.column3,
-          documentType: row.column4,
-          releaseDate: row.column5,
-          releaseNo: row.column6,
-          documentField: row.column7,
-          privateLevel: row.column8,
-          currentNote: row.column9,
-          incommingDocument: row.column10,
-          tasks: row.column11,
-          autoReleaseCheck: row.column12,
-          caSignCheck: row.column13,
-          currentRole: row.column14,
-          nextRole: row.column15,
+          toBook: row.column0 || 0,
+          abstractNote: row.column1 || '',
+          urgencyLevel: row.column2 || '',
+          senderUnit: row.column3 || '',
+          documentType: row.column4 || '',
+          releaseDate: row.column5 || '',
+          releaseNo: row.column6 || '',
+          documentField: row.column7 || '',
+          privateLevel: row.column8 || '',
+          currentNote: row.column9 || '',
+          incommingDocument: row.column10 || '',
+          tasks: row.column11 || '',
+          autoReleaseCheck: row.column12 || false,
+          caSignCheck: row.column13 || false,
+          currentRole: row.column14 || '',
+          nextRole: row.column15 || '',
         });
 
         document.fileId = fileToSave._id;

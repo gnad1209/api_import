@@ -1,13 +1,13 @@
 const FileService = require('./file.service');
 const ClientService = require('./client.service');
 const ExcelService = require('./excel.service');
-const BookService = require('./book.service');
+const UnZipService = require('./unzip.service');
 const DataProcessingService = require('./data.processing.service');
 
 // Multer configuration
 
 const readMapFileFromExcelV3AnhCreatedBook = async (req, res, next) => {
-  console.log('Files:', req.files);
+  // console.log('Files:', req.files);
   try {
     console.log('Xu ly import file');
     let { importFile, zipFile } = req.files;
@@ -31,11 +31,18 @@ const readMapFileFromExcelV3AnhCreatedBook = async (req, res, next) => {
       }
     }
 
+    // giải nén
+    const unzipData = await UnZipService.extractZip(zipFile0.path, processDataConfig.clientId);
+    console.log(unzipData.length);
+
     // Upload files
-    const [uploadedImportFile, uploadedZipFile] = await FileService.uploadFiles(importFile0, zipFile0);
+    const [uploadedImportFile, uploadedZipFile, uploadedUnZipFile] = await FileService.uploadFiles(importFile0, zipFile0, unzipData);
 
     console.log(`Uploaded file ${uploadedImportFile.filename}: `, uploadedImportFile.path);
     console.log(`Uploaded file ${uploadedZipFile.filename}: `, uploadedZipFile.path);
+    uploadedUnZipFile.forEach(element => {
+      console.log(`Uploaded file ${element.filename}: `, element.path);
+    });
 
     // Create folder and save files
     const folderSaveFiles = await FileService.createFolderAndSaveFilesV2(
