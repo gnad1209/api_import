@@ -7,7 +7,8 @@ const fileManager = require('../../models/fileManager.model');
 const Client = require('../../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
-
+const xlsx = require('xlsx');
+const iconv = require('iconv-lite');
 const {
   removeVietnameseTones,
   existsPath,
@@ -154,24 +155,16 @@ const getDataFromAttachment = async (pathAttachmentsPath) => {
 
 async function getDataFromExcelFile(filePath, check = false) {
   try {
-    //kiểm tra sự tồn tại path của file excel
-    const checkPathExcelFile = await existsPath(filePath);
-    if (!checkPathExcelFile) {
-      throw new Error('Không tìm thấy file cần lấy thông tin');
-    }
-    //đọc dữ liệu của file excel
-    const fileBuffer = fs.readFileSync(filePath);
+    // Đọc file Excel
+    const workbook = xlsx.readFile(filePath);
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    // Đọc dữ liệu từ file Excel
-    const dataArray = readExcelDataAsArray(fileBuffer);
-
-    if (!dataArray) {
-      return false;
-    }
-    //trả về dữ liệu của file excel dưới dạng mảng
-    return dataArray;
+    // Lấy dữ liệu từ worksheet
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    return data;
   } catch (error) {
-    return error;
+    console.error('Lỗi khi đọc file Excel:', error.message);
+    return null;
   }
 }
 
@@ -193,11 +186,13 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
     }
     //lặp lấy dữ liệu của file excel
     let resultFile;
+    let resultDocs = [];
+    let resultReceiver = [];
     for (row of dataExcel) {
       if (row.length === 0) continue;
       resultFile = [];
 
-      const toBook = Math.random(0, 100);
+      const toBook = row[0];
       const toBook_en = removeVietnameseTones(toBook);
       const abstractNote = row[1] || 'a';
       const abstractNote_en = removeVietnameseTones(abstractNote);
@@ -208,8 +203,8 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
       const toBookCode_en = removeVietnameseTones(toBookCode);
       const senderUnit = row[5] || 'v';
       const senderUnit_en = removeVietnameseTones(senderUnit);
-      // const files = row[6] || '';
-      const files = 'beeimgtmp-20230524-094039.png, beeimgtmp-20230524-094213.png';
+      const files = row[6] || '';
+      // const files = 'beeimgtmp-20230524-094039.png, beeimgtmp-20230524-094213.png';
       const bookDocumentId = row[7] || '';
       const secondBook = row[8] || '';
       const receiverUnit = row[9] || 'b';
@@ -233,6 +228,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
         .trim()
         .split(',')
         .map((item) => item.trim());
+
       // kiểm tra các trường bắt buộc có null ko
       if (!toBook) {
         throw new Error('thiếu số văn bản');
@@ -247,7 +243,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
         throw new Error('thiếu đơn vị nhận');
       }
       // kiểm tra trường files có tồn tại và phần tử nào thuộc file đính kèm ko
-      if (dataAttachments) {
+      if (dataAttachments.length >= 1) {
         const arrFileAttachments = await hasFileNameInArray(dataAttachments, arrFiles);
         // lặp mảng file vừa lấy được để thêm mới vào db
         for (const file of arrFileAttachments) {
@@ -274,10 +270,10 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
         receiver = new Receiver({ name: receiverUnit });
       }
 
-      let document = await Document.findOne({ toBook });
+      let documentIncomming = await Document.findOne({ toBook });
       // kiểm tra bản ghi đã tồn tại các trường duy nhất chưa
-      if (!document) {
-        document = new Document({
+      if (!documentIncomming) {
+        const document = {
           toBook,
           toBook_en,
           abstractNote,
@@ -289,10 +285,10 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
           toBookCode_en,
           senderUnit,
           senderUnit_en,
-          files: resultFile.length >= 1 ? resultFile.map((file) => file._id) : null,
+          files: resultFile.length >= 1 ? resultFile.map((item) => item._id) : null,
           bookDocumentId,
           secondBook,
-          receiverUnit: receiver._id,
+          receiverUnit: receiver._id ? receiver._id : receiverUnit,
           processorUnits,
           documentType,
           documentType_en,
@@ -308,15 +304,14 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
           letterType,
           processAuthorString,
           toBookCodeDepartment,
-        });
+        };
+        resultDocs.push(document);
       }
-
       // lưu dữ liệu từ file excel thành bản ghi mới
-      let [saveDocument] = await Promise.all([await document.save(), receiver.save()]);
-      result.push(saveDocument);
     }
+    let saveDocument = await Document.insertMany(resultDocs);
     // trả về những bản ghi mới từ file excel
-    return { result, resultFile };
+    return { saveDocument, resultFile };
   } catch (error) {
     return error;
   }

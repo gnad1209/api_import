@@ -13,7 +13,7 @@ const documentSchema = new mongoose.Schema(
     toBookCode: { type: String },
     toBookCode_en: { type: String },
     senderUnit: { type: String },
-    files: { type: mongoose.Schema.Types.ObjectId, ref: 'fileManager' },
+    files: [{ type: mongoose.Schema.Types.ObjectId, ref: 'fileManager' }],
     senderUnit_en: { type: String },
     bookDocumentId: { type: String },
     secondBook: { type: String },
