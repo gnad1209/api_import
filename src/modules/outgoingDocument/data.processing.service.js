@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 
 class DataProcessingService {
-  static async dataProcessing(data, folderPath, config = {}) {
+  static async dataProcessing(data, folderPath, config = {}, attachmentFile) {
     try {
       const result = [];
       // lấy biến config hoặc môi trường
@@ -155,6 +155,10 @@ class DataProcessingService {
           hasChild: false,
         });
 
+        var dataAttachment = [];
+        for (const element of attachmentFile) {
+          dataAttachment.push(element._id);
+        }
         const bookToSave = new BookModel({
           toBook: row.column0 || 0,
           abstractNote: row.column1 || '',
@@ -172,6 +176,7 @@ class DataProcessingService {
           caSignCheck: row.column13 || false,
           currentRole: row.column14 || '',
           nextRole: row.column15 || '',
+          attachment_file: dataAttachment || [],
         });
 
         document.fileId = fileToSave._id;

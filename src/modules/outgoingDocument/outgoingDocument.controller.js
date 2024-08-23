@@ -33,15 +33,19 @@ const readMapFileFromExcelV3AnhCreatedBook = async (req, res, next) => {
 
     // giải nén
     const unzipData = await UnZipService.extractZip(zipFile0.path, processDataConfig.clientId);
-    console.log(unzipData.length);
+    console.log(unzipData);
 
     // Upload files
-    const [uploadedImportFile, uploadedZipFile, uploadedUnZipFile] = await FileService.uploadFiles(importFile0, zipFile0, unzipData);
+    const [uploadedImportFile, uploadedZipFile, uploadedUnZipFile] = await FileService.uploadFiles(
+      importFile0,
+      zipFile0,
+      unzipData,
+    );
 
     console.log(`Uploaded file ${uploadedImportFile.filename}: `, uploadedImportFile.path);
     console.log(`Uploaded file ${uploadedZipFile.filename}: `, uploadedZipFile.path);
-    uploadedUnZipFile.forEach(element => {
-      console.log(`Uploaded file ${element.filename}: `, element.path);
+    uploadedUnZipFile.forEach((element) => {
+      console.log(`Uploaded file ${element.filename}: `, element);
     });
 
     // Create folder and save files
@@ -54,7 +58,12 @@ const readMapFileFromExcelV3AnhCreatedBook = async (req, res, next) => {
     const excelData = await ExcelService.getDataFromExcelFile(uploadedImportFile);
 
     // Process data
-    const data = await DataProcessingService.dataProcessing(excelData, folderSaveFiles, processDataConfig);
+    const data = await DataProcessingService.dataProcessing(
+      excelData,
+      folderSaveFiles,
+      processDataConfig,
+      uploadedUnZipFile,
+    );
     console.log('=================== DONE ===================');
     // console.log(data);
 

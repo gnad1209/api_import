@@ -7,7 +7,7 @@ const bookSchema = new mongoose.Schema({
   urgencyLevel: { type: String, default: 'thng' }, // Độ khẩn
   senderUnit: { type: String, required: true }, // Đơn vị soạn thảo
   documentType: { type: String, default: 'Congvan' }, // Loại văn bản
-  releaseDate: { type: String}, // Ngày ban hành
+  releaseDate: { type: String }, // Ngày ban hành
   releaseNo: { type: String }, // Số văn bản đi
   documentField: { type: String, default: 'vn-bn-quy-phm-php-lut' }, // Lĩnh vực
   privateLevel: { type: String, default: 'mt' }, // Độ mật
@@ -17,7 +17,8 @@ const bookSchema = new mongoose.Schema({
   autoReleaseCheck: { type: Boolean, default: false }, // Tự động ban hành
   caSignCheck: { type: Boolean, default: false }, // Ký CA
   currentRole: { type: String }, // Vai trò
-  nextRole: { type: String } // Vai trò tiếp theo
+  nextRole: { type: String }, // Vai trò tiếp theo
+  attachment_file: [{ type: mongoose.Schema.Types.ObjectId, ref: 'File' }],
 });
 
 // Tạo model từ schema
