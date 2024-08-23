@@ -307,6 +307,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
         resultDocs.push(document);
       }
       // lưu dữ liệu từ file excel thành bản ghi mới
+      await Receiver.save();
     }
     let saveDocument = await Document.insertMany(resultDocs);
     // trả về những bản ghi mới từ file excel
