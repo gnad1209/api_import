@@ -7,7 +7,7 @@ const documentSchema = new mongoose.Schema(
     toBook_en: { type: String },
     abstractNote: { type: String },
     abstractNote_en: { type: String },
-    bookDocumentIdName: { type: String },
+    toBookNumber: { type: Number },
     urgencyLevel: { type: String },
     urgencyLevel_en: { type: String },
     toBookCode: { type: String },

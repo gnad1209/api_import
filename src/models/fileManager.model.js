@@ -1,4 +1,3 @@
-const { type } = require('os');
 const conn = require('../config/appConn');
 const mongoose = require('mongoose');
 
@@ -8,6 +7,7 @@ const fileManagerSchema = new mongoose.Schema(
       type: String,
       index: true,
     },
+    mid: { type: mongoose.Schema.Types.ObjectId, ref: 'Document' },
     name: { type: String },
     parentPath: { type: String },
     username: { type: String },

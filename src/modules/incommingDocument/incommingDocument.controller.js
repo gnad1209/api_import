@@ -24,13 +24,13 @@ const importDataInZipFile = async (req, res, next) => {
 
     // kiểm tra file được tải lên chưa
     if (!zipFile) {
-      return res.status(400).json({ status: 0, message: 'Upload file failed' });
+      return res.status(400).json({ status: 0, message: 'Tải file lên thất bại' });
     }
 
     //giải nén file zip đầu vào
     const extractFileZip = await service.unzipFile(compressedFilePath, folderToSave);
     if (!extractFileZip) {
-      return res.status(400).json({ status: 0, message: 'extract Failed' });
+      return res.status(400).json({ status: 0, message: 'Giải nén không thành công' });
     }
 
     // lấy path của file excel và path của file zip đính kèm còn lại
@@ -41,12 +41,12 @@ const importDataInZipFile = async (req, res, next) => {
     }
 
     // Kiểm tra dung lượng còn lại của client
-    // if (clientId) {
-    //   const checkStorage = await service.checkStorage(objPath, clientId, folderToSave);
-    //   if (!checkStorage) {
-    //     return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
-    //   }
-    // }
+    if (clientId) {
+      const checkStorage = await service.checkStorage(objPath, clientId, folderToSave);
+      if (!checkStorage) {
+        return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
+      }
+    }
 
     //giải nén file đính kèm
     let extractFileAttachment = null;
@@ -59,14 +59,14 @@ const importDataInZipFile = async (req, res, next) => {
       // lấy thông tin các file con trong file zip đính kèm(zipAttachmentFile) từ path vừa tìm đc
       dataFromAttachment = await service.getDataFromAttachment(folderToSaveaAtachment);
       if (!dataFromAttachment) {
-        return res.status(400).json({ status: 0, message: 'get data attachments failed' });
+        return res.status(400).json({ status: 0, message: 'Lấy dữ liệu tệp đính kèm thất bại' });
       }
     }
 
     // lấy dữ liệu file excel
     const dataExcel = await service.getDataFromExcelFile(objPath.excelFile);
     if (!dataExcel) {
-      return res.status(400).json({ status: 0, message: 'get data from excel file failed' });
+      return res.status(400).json({ status: 0, message: 'Lấy dữ liệu từ file excel thất bại' });
     }
 
     //xử lý dữ liệu lưu các bản ghi vào db
