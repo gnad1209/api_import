@@ -143,21 +143,4 @@ function removeVietnameseTones(str) {
   return str.toLowerCase();
 }
 
-/**
- * Function Import from outsource -- không cần quan tâm lắm đến hàm này vì nó sử dụng cho bên khác
- * @param {*} profileYear
- * @param {*} profileNumber
- * @returns
- */
-function createSortIndex(profileYear, profileNumber) {
-  profileYear = typeof profileYear === 'string' && profileYear ? profileYear : '0000';
-  profileNumber = typeof profileNumber === 'string' ? profileNumber : '';
-  if (isNaN(profileYear)) {
-    return `1${profileYear}_${profileNumber.padStart(20, '0')}`;
-  }
-  const yearNo =
-    '' + (9999 - (!isNaN(parseInt(profileYear.replace(/\D/g, ''))) ? parseInt(profileYear.replace(/\D/g, '')) : 9999));
-  return `0${yearNo}_${profileNumber.padStart(20, '0')}`;
-}
-
 module.exports = DataProcessingService;
