@@ -1,11 +1,6 @@
-const Profile = require('./models/profile.model');
-const Document = require('./models/document.model');
-const fileManagerModel = require('./models/filemanager.model');
 const FileModel = require('./models/file.model');
 const BookModel = require('./models/book.model');
 const path = require('path');
-const mongoose = require('mongoose');
-const fs = require('fs');
 
 class DataProcessingService {
   /**
