@@ -12,7 +12,6 @@ const iconv = require('iconv-lite');
 const {
   removeVietnameseTones,
   existsPath,
-  readExcelDataAsArray,
   checkForSingleZipAndExcel,
   deleteFolderAndContent,
   hasFileNameInArray,
@@ -222,12 +221,12 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
 
         // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
         for (const file of resultFile) {
-          file.mid = savedDocument._id;
+          Array.from(file.mid);
+          file.mid.push(savedDocument._id);
           await file.save();
         }
 
         resultDocs.push(savedDocument);
-        console.log('savedDocument', savedDocument);
       }
     }
     // Trả về những bản ghi mới từ file excel và file đính kèm
@@ -324,13 +323,15 @@ const validateRequiredFields = ({ toBook, abstractNote, senderUnit, toBookNumber
   if (!senderUnit) {
     throw new Error('Thiếu đơn vị gửi - cột 6');
   }
-  if (typeof toBookNumber === 'number' && !isNaN(toBookNumber)) {
-    throw new Error('Số văn bản đến p là số - cột 3');
-  }
-  const receiver = ['company', 'department', 'stock', 'factory', 'workshop', 'salePoint', 'corporation'];
-  if (!receiver.includes(receiverUnit)) {
-    throw new Error('Đơn vị nhận phải là 1 trong những loại cho trước - cột 10');
-  }
+
+  // if (typeof Number(toBookNumber) === 'number' && !isNaN(Number(toBookNumber))) {
+  //   throw new Error('Số văn bản đến phải là số - cột 3');
+  // }
+
+  // const receiver = ['company', 'department', 'stock', 'factory', 'workshop', 'salePoint', 'corporation'];
+  // if (!receiver.includes(receiverUnit)) {
+  //   throw new Error('Đơn vị nhận phải là 1 trong những loại cho trước - cột 10');
+  // }
 };
 
 /**

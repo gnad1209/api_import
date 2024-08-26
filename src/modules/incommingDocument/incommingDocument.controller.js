@@ -1,5 +1,6 @@
 const service = require('./incommingDocument.service');
 const path = require('path');
+const { deleteFolderAndContent } = require('../../config/common');
 
 const importDataInZipFile = async (req, res, next) => {
   try {
@@ -71,7 +72,8 @@ const importDataInZipFile = async (req, res, next) => {
 
     //xử lý dữ liệu lưu các bản ghi vào db
     const data = await service.processData(dataExcel, dataFromAttachment, folderToSave);
-    if (!data) {
+    if (data.saveDocument.length < 1) {
+      await deleteFolderAndContent(folderToSave);
       return res.status(400).json({ status: 0, message: 'Import bản ghi thất bại' });
     }
     return res.status(200).json({ status: 1, data });

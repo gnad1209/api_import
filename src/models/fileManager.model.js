@@ -7,7 +7,7 @@ const fileManagerSchema = new mongoose.Schema(
       type: String,
       index: true,
     },
-    mid: { type: mongoose.Schema.Types.ObjectId, ref: 'Document' },
+    mid: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Document' }],
     name: { type: String },
     parentPath: { type: String },
     username: { type: String },
