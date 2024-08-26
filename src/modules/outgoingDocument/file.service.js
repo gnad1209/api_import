@@ -10,7 +10,14 @@ class FileService {
     return config;
   }
 
-  static async uploadFiles(zipFile, unzipData, attachmentData) {
+  /**
+   * Xử lý và lưu trữ các tệp tin (bao gồm tệp ZIP, dữ liệu đã giải nén và dữ liệu đính kèm) vào cơ sở dữ liệu.
+   *
+   * @param {Object} zipFile - Đối tượng tệp tin ZIP gốc mà người dùng tải lên.
+   * @param {Array<Object>} unzipData - Mảng chứa thông tin các tệp tin đã được giải nén từ tệp ZIP.
+   * @param {Array<Object>} attachmentData - Mảng chứa thông tin các tệp tin đính kèm bổ sung.
+   */
+  static async processAndSaveFiles(zipFile, unzipData, attachmentData) {
     // Khởi tạo mảng các đối tượng file cần tạo
     const filesToCreate = [
       {
@@ -46,54 +53,42 @@ class FileService {
     });
 
     // Tạo các file trong cơ sở dữ liệu
-    const createdFiles = await File.create(filesToCreate);
+    try {
+      const createdFiles = await File.create(filesToCreate);
 
-    // Trả về mảng với từng phần tử tương ứng
-    return [
-      createdFiles[0], // File zip
-      createdFiles.slice(1, 3), // File đầu tiên từ unzipData, trả về dưới dạng mảng
-      createdFiles.slice(3), // Các file còn lại từ unzipData và tất cả từ attachmentData
-    ];
+      // Trả về mảng với từng phần tử tương ứng
+      return [
+        createdFiles[0], // File zip
+        createdFiles.slice(1, 3), // File đầu tiên từ unzipData, trả về dưới dạng mảng
+        createdFiles.slice(3), // Các file còn lại từ unzipData và tất cả từ attachmentData
+      ];
+    } catch (error) {
+      console.log('Lỗi khi thực hiện tạo bản ghi file');
+      throw error;
+    }
   }
 
-  static async createFolderAndSaveFilesV2(compressedFile, config = {}) {
+  /**
+   * Tạo thư mục và lưu trữ tập tin nén.
+   *
+   * @param {Object} compressedFile - Tập tin nén cần lưu.
+   * @param {Object} [config={}] - Cấu hình tùy chọn, chứa thuộc tính `clientId`.
+   * @returns {Promise<string>} - Trả về đường dẫn thư mục nơi lưu trữ tập tin nén.
+   * @throws {Error} - Ném lỗi nếu tập tin không tồn tại hoặc xảy ra lỗi khi tạo thư mục.
+   */
+  static async createFolderAndSaveFiles(compressedFile, config = {}) {
     try {
       const time = new Date() * 1;
       const defaultClientId = config.clientId ? config.clientId : process.env.CLIENT_KHOLS;
 
-      // const importFileName = importFile.filename;
       const compressedFileName = compressedFile.filename;
-      // Đường dẫn tới thư mục lưu trữ
       const folderToSave = path.join(__dirname, '..', 'uploads', `${defaultClientId}`, `import_${time}`);
       const firstUploadFolder = path.join(__dirname, '..', 'files');
-
-      // const importFilePath = path.join(firstUploadFolder, importFileName);
-      // const newImportFilePath = path.join(folderToSave, importFile.name);
 
       const compressedFilePath = path.join(firstUploadFolder, compressedFileName);
       const newCompressedFilePath = path.join(folderToSave, compressedFile.name);
 
-      // const checkSaveFolder = await existsPath(folderToSave);
-      // const checkImportFile = await existsPath(importFilePath);
-      // const checkZipFile = await existsPath(compressedFilePath);
-
-      // if (!checkSaveFolder) {
-      //   await fsPromise.mkdir(folderToSave); // tạo đường dẫn thư mục nếu không tồn tại
-      // }
-      // if (!checkImportFile || !checkZipFile) {
-      //   throw new Error('Không tồn tại file đã upload');
-      // }
-
       await fsPromise.mkdir(folderToSave, { recursive: true });
-      // Kiểm tra xem file nguồn có tồn tại không
-      // if (
-      //   !(await fsPromise
-      //     .access(importFilePath)
-      //     .then(() => true)
-      //     .catch(() => false))
-      // ) {
-      //   throw new Error(`File không tồn tại: ${importFilePath}`);
-      // }
       if (
         !(await fsPromise
           .access(compressedFilePath)
@@ -103,16 +98,8 @@ class FileService {
         throw new Error(`File không tồn tại: ${compressedFilePath}`);
       }
 
-      // await fsPromise.copyFile(importFilePath, newImportFilePath);
       await fsPromise.copyFile(compressedFilePath, newCompressedFilePath);
 
-      // const os = process.platform;
-      // if (os == 'win32') {
-      //   await unzipFileWindow(compressedFilePath, folderToSave);
-      // } else {
-      // await unzipFile(compressedFilePath, folderToSave);
-      // }
-      // await unzipFile(compressedFilePath, folderToSave); // tạm thời comment
       console.log('Thư mục lưu: ', folderToSave);
       return folderToSave;
     } catch (error) {

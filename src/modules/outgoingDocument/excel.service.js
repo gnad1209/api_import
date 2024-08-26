@@ -1,15 +1,15 @@
 const axios = require('axios');
 const xlsx = require('xlsx');
 class ExcelService {
-  static async getDataFromExcelFile(file, check = false) {
+  /**
+   * Lấy dữ liệu từ tập tin Excel (.xlsx) và chuyển đổi sang định dạng JSON.
+   *
+   * @param {Object} file - Đối tượng tập tin chứa thông tin về file Excel.
+   * @returns {Promise<Object[]>} - Trả về mảng các đối tượng JSON tương ứng với các dòng trong tập tin Excel.
+   * @throws {Error} - Ném lỗi nếu không tìm thấy file trong cơ sở dữ liệu hoặc lỗi khi đọc file Excel.
+   */
+  static async getDataFromExcelFile(file) {
     try {
-      if (check) {
-        const FileModel = mongoose.models.File;
-        const fileCheck = await FileModel.findById(file._id);
-        if (!fileCheck) {
-          throw new Error('Không tìm thấy file');
-        }
-      }
       // Đọc file .xlsx
       const workbook = xlsx.readFile(file.path);
 

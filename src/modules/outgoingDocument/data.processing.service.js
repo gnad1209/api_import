@@ -8,38 +8,30 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 
 class DataProcessingService {
+  /**
+   * Xử lý dữ liệu từ file Excel và lưu trữ các bản ghi vào cơ sở dữ liệu.
+   *
+   * @param {Array} data - Mảng dữ liệu từ file Excel đã được chuyển đổi sang định dạng JSON.
+   * @param {string} folderPath - Đường dẫn thư mục chứa các file gốc.
+   * @param {Object} config - Các cấu hình bổ sung như clientId.
+   * @param {Array} uploadedUnzipToUnZipFile - Danh sách các file đã được giải nén và lưu trữ.
+   * @returns {Promise<Array>} - Trả về mảng các bản ghi sách đã được lưu trữ.
+   * @throws {Error} - Nếu có lỗi xảy ra trong quá trình xử lý dữ liệu.
+   */
   static async dataProcessing(data, folderPath, config = {}, uploadedUnzipToUnZipFile) {
     try {
       const result = [];
       // lấy biến config hoặc môi trường
-      const defaultPlan = config.plan ? config.plan : process.env.KHOLS_UPLOAD_PLAN;
-      const defaultUploadAccount = config.account ? config.account : process.env.KHOLS_UPLOAD_ACCOUNT;
-      const defaultCreator = config.creator ? config.creator : process.env.KHOLS_UPLOAD_ACCOUNT_ID;
-      const defaultUploadOrg = config.organizationUnit ? config.organizationUnit : process.env.KHOLS_UPLOAD_ACCOUNT_ORG;
       const defaultClientId = config.clientId ? config.clientId : process.env.CLIENT_KHOLS;
 
       // check tồn tại thư mục xử lý
       if (!Array.isArray(data)) {
         throw new Error('Sai dữ liệu đầu vào');
       }
-
-      // const checkFolder = await existsPath(folderPath);
-      // if (!checkFolder) {
-      //   throw new Error('Thư mục xử lý không tồn tại');
-      // }
-
       // bắt đầu xử lý
 
       for (const row of data) {
         if (row.rowIndex === 0) continue;
-
-        const profileYear = row.column0 || 0;
-        const binderCode = row.column1 || '';
-        const profileTitle = row.column2 || '';
-        const profileTitle_en = removeVietnameseTones(profileTitle);
-        const documentAbstract = row.column3 || ''; // trích yêu văn bản
-        const profileIndex = row.column4 || ''; // số thứ tự trong hộp
-        const initFilename = row.column5 || ''; // tên file thực tế
 
         // refix - khi mà không ai để ý đến việc đặt tên file trên hệ thống; sửa tên file thành dạng thao tác được ☠☠
         let plainName = removeVietnameseTones(row.column6.replace(/\s/g, ''));
@@ -49,112 +41,9 @@ class DataProcessingService {
         let saveFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${filenameToSet}`;
         saveFilename = saveFilename.length > 255 ? saveFilename.substring(0, 255) : saveFilename;
 
-        const filenameToCopyPath = path.join(folderPath, initFilename);
-        const saveModelFilePath = path.join(__dirname, '..', '..', '..', 'uploads', defaultClientId, saveFilename);
-
-        let profileFilter = {
-          status: 1,
-          // planId: defaultPlan,
-          // planId: defaultPlan ? defaultPlan : mongoose.Types.ObjectId(defaultPlan),
-          planId: new mongoose.Types.ObjectId(defaultPlan),
-          $or: [{ profileTitle }, { profileTitle_en }],
-          profileYear,
-        };
-        if (config.profileId) {
-          profileFilter = {
-            status: 1,
-            _id: mongoose.Types.ObjectId.isValid(config.profileId)
-              ? new mongoose.Types.ObjectId(config.profileId)
-              : config.profileId,
-          };
-        }
-
-        let profile = await Profile.findOne(profileFilter);
-        if (!profile) {
-          profile = new Profile({
-            status: 1,
-            kanbanStatus: 1,
-            profileTitle,
-            title: profileTitle,
-            profileYear,
-            binderCode,
-            organizationUnitId: defaultUploadOrg,
-            createdBy: defaultCreator,
-            planId: defaultPlan,
-            sortIndex: createSortIndex(profileYear, profileIndex),
-          });
-          console.log('Tao moi ho so: ', profile._id);
-        } else {
-          console.log('Cap nhap ho so: ', profile._id);
-        }
-
-        const documentFullPath = path.join(folderPath, '..', saveFilename);
-
-        let document = await Document.findOne({
-          status: 1,
-          profileId: profile._id,
-          profileIndex,
-          abstract: documentAbstract,
-        });
-        if (!document) {
-          const pageNumber = 12;
-
-          // const pageNumber = await countPagePdf(filenameToCopyPath);
-
-          document = new Document({
-            status: 1,
-            profileId: profile._id,
-            profileIndex: profileIndex,
-            organizationUnitId: defaultUploadOrg,
-            createdBy: defaultCreator,
-            abstract: documentAbstract,
-            page_count: pageNumber,
-          });
-          console.log('Tao moi van ban: ', document._id);
-          profile.pageQuantity = (+profile.pageQuantity || 0) + pageNumber;
-          console.log('Doc page count: ', pageNumber);
-          const sheetCount = Math.round(pageNumber / 2) || 0;
-          profile.sheetQuantity += sheetCount;
-          profile.documentQuantity += 1;
-        } else {
-          console.log('Cap nhap van ban: ', document._id);
-        }
-        if (profile.code) document.code = profile.code;
-        if (profile.codeOrg) document.codeOrg = profile.codeOrg;
-        if (profile.historyOrg) document.historyOrg = profile.historyOrg;
-        if (profile.room) document.room = profile.room;
-
-        const fileToSave = new fileManagerModel({
-          fullPath: documentFullPath, // đường dẫn dầy đủ tới file
-          mid: document._id, // id của bản ghi chiều 03 -> khols
-          name: `${filenameToSet}`, // tên file đặt tên theo ý muốn (từ dữ liệu excel)
-          parentPath: `${folderPath}`, // pwd thư mục lưu file
-          username: defaultUploadAccount, // fix cứng id của user thực hiện upload
-          isFile: true, // fix cứng giá trị true
-          type: '.pdf', // gần như là pdf
-          realName: saveFilename, // tên file thực tế lưu trên 03, là tên được gen với chuỗi random
-          clientId: defaultClientId, // fix cứng, k quan tâm
-          code: 'company', //
-          mimetype: 'application/pdf', //
-          nameRoot: saveFilename, // như trên
-          createdBy: defaultCreator, // fix cứng
-          smartForm: '',
-          isFileSync: false,
-          folderChild: false,
-          isStarred: false,
-          isEncryption: false,
-          shares: [],
-          isConvert: false,
-          internalTextIds: [],
-          canDelete: true,
-          canEdit: true,
-          status: 1,
-          isApprove: false,
-          public: 0,
-          permissions: [],
-          users: [],
-          hasChild: false,
-        });
+        path.join(folderPath, 'initFilename');
+        path.join(__dirname, '..', '..', '..', 'uploads', defaultClientId, saveFilename);
+        path.join(folderPath, '..', saveFilename);
 
         const fileMapping = {};
 
@@ -213,16 +102,12 @@ class DataProcessingService {
           }),
         );
 
-        document.fileId = fileToSave._id;
-        document.originalFileId = fileToSave._id;
-
         // console.log('Duong dan tai lieu da luu: ', fileToSave.fullPath);
         // console.log('document == document ', document);
         // console.log('bookToSave == bookToSave ', bookToSave);
         // console.log('uploadedUnzipToUnZipFile == uploadedUnzipToUnZipFile ', uploadedUnzipToUnZipFile);
 
-        const saveResult = await Promise.all([fileToSave.save(), document.save(), profile.save()]);
-        result.push(saveResult);
+        result.push(bookToSave);
       }
 
       return result;

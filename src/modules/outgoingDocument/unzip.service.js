@@ -4,6 +4,11 @@ const path = require('path');
 const mime = require('mime-types');
 
 class UnzipService {
+  /**
+ * Giải nén file ZIP và lưu trữ các tệp đã giải nén vào một thư mục.
+ * @param {string} zipFilePath - Đường dẫn đến file ZIP cần giải nén.
+ * @param {string} defaultClientId - Mã client được sử dụng để đặt tên thư mục chứa file đã giải nén.
+ */
   static async extractZip(zipFilePath, defaultClientId) {
     try {
       // console.log('Đường dẫn tới file chuẩn bị giải nén:', zipFilePath);
