@@ -4,8 +4,6 @@ const ExcelService = require('./excel.service');
 const UnZipService = require('./unzip.service');
 const DataProcessingService = require('./data.processing.service');
 
-// Multer configuration
-
 const importOutgoingDocument = async (req, res, next) => {
   try {
     // kiểm tra file có hợp lệ ko ?
