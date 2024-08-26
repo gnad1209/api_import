@@ -18,7 +18,9 @@ const bookSchema = new mongoose.Schema({
   caSignCheck: { type: Boolean, default: false }, // Ký CA
   currentRole: { type: String }, // Vai trò
   nextRole: { type: String }, // Vai trò tiếp theo
-  attachment_file: [{ type: mongoose.Schema.Types.ObjectId, ref: 'File' }],
+  attachment_file1: { type: mongoose.Schema.Types.ObjectId, ref: 'File' },
+  attachment_file2: { type: mongoose.Schema.Types.ObjectId, ref: 'File' },
+  attachment_file3: { type: mongoose.Schema.Types.ObjectId, ref: 'File' },
 });
 
 // Tạo model từ schema

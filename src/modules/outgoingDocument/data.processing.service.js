@@ -1,13 +1,14 @@
 const Profile = require('./models/profile.model');
 const Document = require('./models/document.model');
 const fileManagerModel = require('./models/filemanager.model');
+const FileModel = require('./models/file.model');
 const BookModel = require('./models/book.model');
 const path = require('path');
 const mongoose = require('mongoose');
 const fs = require('fs');
 
 class DataProcessingService {
-  static async dataProcessing(data, folderPath, config = {}, attachmentFile) {
+  static async dataProcessing(data, folderPath, config = {}, uploadedUnzipToUnZipFile) {
     try {
       const result = [];
       // lấy biến config hoặc môi trường
@@ -155,10 +156,24 @@ class DataProcessingService {
           hasChild: false,
         });
 
-        var dataAttachment = [];
-        for (const element of attachmentFile) {
-          dataAttachment.push(element._id);
+        const fileMapping = {};
+
+        // So sánh với các tên file đọc từ file excel văn bản với tên file đính kèm và liên kết id bản ghi của file đấy với bản ghi văn bản
+        for (const element of uploadedUnzipToUnZipFile) {
+          // Tách phần tên file ra khỏi phần mở rộng
+          const fileNameWithoutExtension = element.name.split('.')[0];
+
+          if (fileNameWithoutExtension == row.column15.split('.')[0]) {
+            fileMapping.attachment_file1 = element._id;
+          } else if (fileNameWithoutExtension == row.column16.split('.')[0]) {
+            fileMapping.attachment_file2 = element._id;
+          } else if (fileNameWithoutExtension == row.column17.split('.')[0]) {
+            fileMapping.attachment_file3 = element._id;
+          }
         }
+        console.log('fileMapping', fileMapping);
+
+        //tạo bản ghi văn bản mới từ file excel đọc được
         const bookToSave = new BookModel({
           toBook: row.column0 || 0,
           abstractNote: row.column1 || '',
@@ -175,29 +190,41 @@ class DataProcessingService {
           autoReleaseCheck: row.column12 || false,
           caSignCheck: row.column13 || false,
           currentRole: row.column14 || '',
-          nextRole: row.column15 || '',
-          attachment_file: dataAttachment || [],
+          attachment_file1: fileMapping.attachment_file1,
+          attachment_file2: fileMapping.attachment_file2,
+          attachment_file3: fileMapping.attachment_file3,
+          nextRole: row.column18 || '',
         });
+
+        // Lưu bản ghi văn bản
+        await bookToSave.save();
+
+        // Cập nhật các bản ghi file với id của bản ghi văn bản
+        await Promise.all(
+          uploadedUnzipToUnZipFile.map(async (file) => {
+            // Tìm bản ghi sách tương ứng dựa trên tên file và cập nhật
+            if (
+              file._id.equals(fileMapping.attachment_file1) ||
+              file._id.equals(fileMapping.attachment_file2) ||
+              file._id.equals(fileMapping.attachment_file3)
+            ) {
+              await FileModel.findByIdAndUpdate(file._id, { book: bookToSave._id });
+            }
+          }),
+        );
 
         document.fileId = fileToSave._id;
         document.originalFileId = fileToSave._id;
 
-        // console.log('=======================================================');
-        // const checkk = await existsPath(filenameToCopyPath);
-        // console.log('Đường dẫn file copy co ton tai?: ', checkk);
+        // console.log('Duong dan tai lieu da luu: ', fileToSave.fullPath);
+        // console.log('document == document ', document);
+        // console.log('bookToSave == bookToSave ', bookToSave);
+        // console.log('uploadedUnzipToUnZipFile == uploadedUnzipToUnZipFile ', uploadedUnzipToUnZipFile);
 
-        // console.log('=======================================================');
-
-        // await fsPromise.copyFile(filenameToCopyPath, saveModelFilePath);
-        console.log('Duong dan tai lieu da luu: ', fileToSave.fullPath);
-        console.log('document == document ', document);
-
-        const saveResult = await Promise.all([fileToSave.save(), document.save(), profile.save(), bookToSave.save()]);
+        const saveResult = await Promise.all([fileToSave.save(), document.save(), profile.save()]);
         result.push(saveResult);
-        // xóa folder tiết kiệm bộ nhớ sau khi sử dụng. File zip và file excel còn tồn tại bên file, file sử udnjg đã có trong upload và sử dụng được
       }
 
-      console.log('Xóa đường dẫn: đùa đấy chưa xóa đâu ', folderPath);
       return result;
     } catch (error) {
       console.log('Lỗi khi xử lý dữ liệu');
@@ -234,27 +261,6 @@ function removeVietnameseTones(str) {
   // Bỏ dấu câu, kí tự đặc biệt
   // str = str.replace(/!|@|%|\^|\*|\(|\)|\+|\=|\<|\>|\?|\/|,|\.|\:|\;|\'|\"|\&|\#|\[|\]|~|\$|_|`|-|{|}|\||\\/g, ' ');
   return str.toLowerCase();
-}
-
-/**
- * Đếm số trang của file pdf với đường dẫn
- * Cài thêm thư viện pdf-lib
- * Đã có thư viện fs
- * @param {Path} fullPath Đường dẫn thực tới file tương ứng model FileManager
- * @returns
- */
-const { PDFDocument } = require('pdf-lib');
-
-async function countPagePdf(fullPath) {
-  try {
-    const fileContents = await fsPromise.readFile(fullPath);
-    const _PDFInstance = await PDFDocument.load(fileContents);
-    const numberOfPages = _PDFInstance.getPages().length;
-    return numberOfPages;
-  } catch (error) {
-    console.log('Lỗi khi đếm số trang pdf');
-    throw error;
-  }
 }
 
 /**

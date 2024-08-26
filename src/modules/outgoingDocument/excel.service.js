@@ -3,8 +3,6 @@ const xlsx = require('xlsx');
 class ExcelService {
   static async getDataFromExcelFile(file, check = false) {
     try {
-      const fileUrl = `https://administrator.lifetek.vn:233/api/files/66bc544d181ca41279b2adf9`; // dùng tạm
-      // const fileUrl = 'https://administrator.lifetek.vn:253/api/files/65e142cbd459504c5edb6974'; // dùng tạm
       if (check) {
         const FileModel = mongoose.models.File;
         const fileCheck = await FileModel.findById(file._id);
@@ -23,42 +21,26 @@ class ExcelService {
 
       // Chuyển đổi dữ liệu sheet sang JSON, bắt đầu từ dòng thứ 2
       const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 1 });
+
+      // Xác định số lượng cột tối đa trong sheet
+      const maxColumns = Math.max(...jsonData.map((row) => row.length));
+
       // Mảng để chứa dữ liệu đã chuyển đổi
       const Data = [];
+
       // Duyệt từng dòng, bắt đầu từ dòng thứ 2
       jsonData.forEach((row, rowIndex) => {
-        // Kiểm tra nếu dòng có bất kỳ cột nào có dữ liệu
-        const hasData = row.some((column) => column !== undefined && column !== null && column !== '');
+        const rowData = { rowIndex: rowIndex + 2 }; // +2 để khớp với dòng trong Excel
 
-        if (hasData) {
-          const rowData = { rowIndex: rowIndex + 2 }; // +2 để khớp với dòng trong Excel
-
-          // Duyệt từng cột trong dòng
-          row.forEach((value, columnIndex) => {
-            if (value !== undefined && value !== null && value !== '') {
-              rowData[`column${columnIndex}`] = value;
-            }
-          });
-
-          // Thêm dòng đã xử lý vào mảng Data
-          Data.push(rowData);
+        // Duyệt qua số lượng cột tối đa và đảm bảo rằng mỗi cột có giá trị hoặc là ''
+        for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
+          rowData[`column${columnIndex}`] =
+            row[columnIndex] !== undefined && row[columnIndex] !== null ? row[columnIndex] : '';
         }
+
+        // Thêm dòng đã xử lý vào mảng Data
+        Data.push(rowData);
       });
-      // console.log('======dataa', Data);
-
-      // const fileUrl = process.env.BASE_URL + file._id;
-      // const readFileExcelUrl = process.env.READ_EXCEL_URL;
-      // const request = await axios.post(readFileExcelUrl, null, {
-      //   params: {
-      //     pageIndex: 0,
-      //     typeData: 'raw',
-      //     docUrl: fileUrl,
-      //   },
-      // });
-
-      // if (request && request.data && Array.isArray(request.data)) {
-      //   return request.data;
-      // }
 
       return Data;
     } catch (error) {

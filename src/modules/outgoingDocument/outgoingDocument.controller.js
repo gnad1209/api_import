@@ -9,21 +9,23 @@ const DataProcessingService = require('./data.processing.service');
 const readMapFileFromExcelV3AnhCreatedBook = async (req, res, next) => {
   // console.log('Files:', req.files);
   try {
-    console.log('Xu ly import file');
-    let { importFile, zipFile } = req.files;
-    if (importFile.length < 1 || zipFile.length < 1) {
+    // kiểm tra file có hợp lệ ko ?
+    let { zipFile } = req.files;
+    if (!zipFile || zipFile == null || File.length < 1) {
       return res.status(400).json({
         status: 0,
         message: 'Upload files failed',
       });
     }
-    const importFile0 = importFile[0];
-    const zipFile0 = zipFile[0];
-    const totalSize = importFile0.size + zipFile0.size;
 
+    // lấy thông tin client từ query
     const processDataConfig = FileService.getProcessDataConfig(req.query);
 
-    // Check client storage capacity
+    // tính tổng dung lượng
+    const zipFile0 = zipFile[0];
+    const totalSize = zipFile0.size;
+
+    // kiểm tra dung lượng của client còn đủ không
     if (processDataConfig.clientId) {
       const storageCheckResult = await ClientService.checkStorageCapacity(processDataConfig.clientId, totalSize);
       if (!storageCheckResult.success) {
@@ -33,39 +35,69 @@ const readMapFileFromExcelV3AnhCreatedBook = async (req, res, next) => {
 
     // giải nén
     const unzipData = await UnZipService.extractZip(zipFile0.path, processDataConfig.clientId);
-    console.log(unzipData);
 
-    // Upload files
-    const [uploadedImportFile, uploadedZipFile, uploadedUnZipFile] = await FileService.uploadFiles(
-      importFile0,
+    // giải nén file zip đính kèm
+    let attachmentData = [];
+    for (const element of unzipData) {
+      if (element.mimetype === 'application/zip' && element.name === 'thu_muc_file_dinh_kem.zip') {
+        const dataAttachment = await UnZipService.extractZip(element.path, processDataConfig.clientId);
+        attachmentData = dataAttachment;
+        break;
+      }
+    }
+    if (attachmentData.length < 1) {
+      return res.status(400).json({
+        status: 0,
+        message: 'giải nén thu_muc_file_dinh_kem.zip thất bại',
+      });
+    }
+
+    // Upload tất cả các file
+    const [uploadedZipFile, uploadedUnZipFile, uploadedUnzipToUnZipFile] = await FileService.uploadFiles(
       zipFile0,
       unzipData,
+      attachmentData,
     );
 
-    console.log(`Uploaded file ${uploadedImportFile.filename}: `, uploadedImportFile.path);
-    console.log(`Uploaded file ${uploadedZipFile.filename}: `, uploadedZipFile.path);
-    uploadedUnZipFile.forEach((element) => {
-      console.log(`Uploaded file ${element.filename}: `, element);
-    });
+    // console.log(`Uploaded file 11 ${uploadedZipFile.filename}: `, uploadedZipFile.path);
+    // uploadedUnZipFile.forEach((element) => {
+    //   console.log(`Uploaded file unzip 22  ${element.filename}: `, element);
+    // });
+    // uploadedUnzipToUnZipFile.forEach((element) => {
+    //   console.log(`Uploaded fileUnZip to unzip 33 ${element.filename}: `, element);
+    // });
 
-    // Create folder and save files
-    const folderSaveFiles = await FileService.createFolderAndSaveFilesV2(
-      uploadedImportFile.toObject(),
-      uploadedZipFile.toObject(),
-    );
+    // tạo folder và lưu file
+    const folderSaveFiles = await FileService.createFolderAndSaveFilesV2(uploadedZipFile.toObject());
 
-    // Get data from Excel file
-    const excelData = await ExcelService.getDataFromExcelFile(uploadedImportFile);
+    // lấy dữ liệu từ file excel
+    let excelData = [];
+    for (const element of uploadedUnZipFile) {
+      if (
+        element.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' &&
+        element.name === 'ds_van_ban.xlsx'
+      ) {
+        const dataExcel = await ExcelService.getDataFromExcelFile(element);
+        excelData = dataExcel;
+        break;
+      }
+    }
+    if (excelData.length < 1) {
+      return res.status(400).json({
+        status: 0,
+        message: 'đọc file excel thất bại',
+      });
+    }
+    console.log('excelData == ', excelData);
 
     // Process data
     const data = await DataProcessingService.dataProcessing(
       excelData,
       folderSaveFiles,
       processDataConfig,
-      uploadedUnZipFile,
+      uploadedUnzipToUnZipFile,
     );
-    console.log('=================== DONE ===================');
-    // console.log(data);
+    console.log('DONE DONE DONE DONE DONE DONE DONE');
 
     return res.json({ status: 1, data: data });
   } catch (error) {

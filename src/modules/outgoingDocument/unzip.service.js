@@ -30,14 +30,13 @@ class UnzipService {
         // console.log('===');
         // console.log('=entry=', JSON.stringify(entry, null, 2));
 
-
         return {
-          name: entry.entryName, // Tên file
+          name: entry.entryName, 
           filename: path.basename(entry.entryName),
-          size: entry.header.size, // Kích thước file
-          date: entry.header.time, // Ngày sửa đổi file
+          size: entry.header.size, 
+          date: entry.header.time, 
           mimetype: mimeType,
-          path: fullPath, // Đường dẫn đầy đủ đến file đã giải nén
+          path: fullPath, 
         };
       });
 

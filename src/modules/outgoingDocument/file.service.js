@@ -4,28 +4,15 @@ const fsPromise = require('fs').promises;
 
 class FileService {
   static getProcessDataConfig(query) {
-    const { planId, uploaderId, profileId, organizationUnit, clientId } = query;
+    const { clientId } = query;
     const config = {};
-    if (planId) config.plan = planId;
-    if (uploaderId) config.creator = uploaderId;
-    if (profileId) config.profileId = profileId;
-    if (organizationUnit) config.organizationUnit = organizationUnit;
     if (clientId) config.clientId = clientId;
     return config;
   }
 
-  static async uploadFiles(importFile, zipFile, unzipData) {
+  static async uploadFiles(zipFile, unzipData, attachmentData) {
     // Khởi tạo mảng các đối tượng file cần tạo
     const filesToCreate = [
-      {
-        name: importFile.originalname,
-        filename: importFile.filename,
-        path: importFile.path,
-        size: importFile.size,
-        mimetype: importFile.mimetype,
-        field: importFile.fieldname,
-        user: importFile.user,
-      },
       {
         name: zipFile.originalname,
         filename: zipFile.filename,
@@ -45,7 +32,16 @@ class FileService {
         size: file.size || 0,
         mimetype: file.mimetype || '',
         field: '',
-        user: importFile.user,
+      });
+    });
+    attachmentData.forEach((file) => {
+      filesToCreate.push({
+        name: file.name || '',
+        filename: file.filename || '',
+        path: file.path || '',
+        size: file.size || 0,
+        mimetype: file.mimetype || '',
+        field: '',
       });
     });
 
@@ -54,26 +50,25 @@ class FileService {
 
     // Trả về mảng với từng phần tử tương ứng
     return [
-      createdFiles[0], // File import
-      createdFiles[1], // File zip
-      createdFiles.slice(2), // Tất cả các file từ unzipData
+      createdFiles[0], // File zip
+      createdFiles.slice(1, 3), // File đầu tiên từ unzipData, trả về dưới dạng mảng
+      createdFiles.slice(3), // Các file còn lại từ unzipData và tất cả từ attachmentData
     ];
-    
   }
 
-  static async createFolderAndSaveFilesV2(importFile, compressedFile, config = {}) {
+  static async createFolderAndSaveFilesV2(compressedFile, config = {}) {
     try {
       const time = new Date() * 1;
       const defaultClientId = config.clientId ? config.clientId : process.env.CLIENT_KHOLS;
 
-      const importFileName = importFile.filename;
+      // const importFileName = importFile.filename;
       const compressedFileName = compressedFile.filename;
       // Đường dẫn tới thư mục lưu trữ
       const folderToSave = path.join(__dirname, '..', 'uploads', `${defaultClientId}`, `import_${time}`);
       const firstUploadFolder = path.join(__dirname, '..', 'files');
 
-      const importFilePath = path.join(firstUploadFolder, importFileName);
-      const newImportFilePath = path.join(folderToSave, importFile.name);
+      // const importFilePath = path.join(firstUploadFolder, importFileName);
+      // const newImportFilePath = path.join(folderToSave, importFile.name);
 
       const compressedFilePath = path.join(firstUploadFolder, compressedFileName);
       const newCompressedFilePath = path.join(folderToSave, compressedFile.name);
@@ -91,14 +86,14 @@ class FileService {
 
       await fsPromise.mkdir(folderToSave, { recursive: true });
       // Kiểm tra xem file nguồn có tồn tại không
-      if (
-        !(await fsPromise
-          .access(importFilePath)
-          .then(() => true)
-          .catch(() => false))
-      ) {
-        throw new Error(`File không tồn tại: ${importFilePath}`);
-      }
+      // if (
+      //   !(await fsPromise
+      //     .access(importFilePath)
+      //     .then(() => true)
+      //     .catch(() => false))
+      // ) {
+      //   throw new Error(`File không tồn tại: ${importFilePath}`);
+      // }
       if (
         !(await fsPromise
           .access(compressedFilePath)
@@ -108,7 +103,7 @@ class FileService {
         throw new Error(`File không tồn tại: ${compressedFilePath}`);
       }
 
-      await fsPromise.copyFile(importFilePath, newImportFilePath);
+      // await fsPromise.copyFile(importFilePath, newImportFilePath);
       await fsPromise.copyFile(compressedFilePath, newCompressedFilePath);
 
       // const os = process.platform;
