@@ -70,8 +70,10 @@ const importDataInZipFile = async (req, res, next) => {
     }
 
     //xử lý dữ liệu lưu các bản ghi vào db
-    const data = await service.processData(dataExcel, dataFromAttachment);
-
+    const data = await service.processData(dataExcel, dataFromAttachment, folderToSave);
+    if (!data) {
+      return res.status(400).json({ status: 0, message: 'Import bản ghi thất bại' });
+    }
     return res.status(200).json({ status: 1, data });
   } catch (e) {
     return res.status(400).json(e);

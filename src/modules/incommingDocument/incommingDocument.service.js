@@ -143,6 +143,7 @@ const getDataFromAttachment = async (pathAttachmentsPath) => {
           size: stats.size,
           mimetype: mimetype,
           isDirectory: stats.isDirectory(),
+          isFile: stats.isDirectory() ? false : true,
         };
       }),
     );
@@ -175,13 +176,16 @@ async function getDataFromExcelFile(filePath, check = false) {
  * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
-const processData = async (dataExcel, dataAttachments, config = {}) => {
+const processData = async (dataExcel, dataAttachments, folderToSave, config = {}) => {
   try {
     if (!Array.isArray(dataExcel)) {
       throw new Error('dataExcel không phải là một mảng');
     }
     if (!Array.isArray(dataAttachments)) {
       throw new Error('dataAttachments không phải là một mảng');
+    }
+    if (!folderToSave) {
+      throw new Error('Không tồn tại đường dẫn chứa các file import');
     }
 
     const resultDocs = [];
@@ -191,10 +195,12 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
       if (row.length === 0) continue;
 
       const rowData = extractRowData(row);
+
       // Validate dữ liệu từ file excel
       validateRequiredFields(rowData);
       // Chuyển đổi chuỗi files sang dạng mảng
       let documentIncomming = await Document.findOne({ toBook: rowData.toBook });
+
       // Kiểm tra bản ghi đã tồn tại các trường duy nhất chưa
       if (!documentIncomming) {
         const arrFiles = rowData.files
@@ -202,10 +208,10 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
           .split(',')
           .map((item) => item.trim());
 
-        const resultFile = await processAttachments(dataAttachments, arrFiles);
+        const resultFile = await processAttachments(dataAttachments, arrFiles, folderToSave);
         allResultFiles.push(...resultFile); // Lưu tất cả các file mới vào mảng allResultFiles
 
-        let receiver = await Receiver.findOne({ name: rowData.receiverUnit });
+        let receiver = await Receiver.findOne({ type: rowData.receiverUnit });
         if (!receiver) {
           receiver = new Receiver({ name: rowData.receiverUnit });
           await receiver.save();
@@ -221,6 +227,7 @@ const processData = async (dataExcel, dataAttachments, config = {}) => {
         }
 
         resultDocs.push(savedDocument);
+        console.log('savedDocument', savedDocument);
       }
     }
     // Trả về những bản ghi mới từ file excel và file đính kèm
@@ -240,7 +247,8 @@ const extractRowData = (row) => {
   const toBook_en = removeVietnameseTones(toBook);
   const abstractNote = row[1] || '';
   const abstractNote_en = removeVietnameseTones(abstractNote);
-  const toBookNumber = row[2] || '';
+  // const toBookNumber = row[2] || '';
+  const toBookNumber = 2;
   const urgencyLevel = row[3] || '';
   const urgencyLevel_en = removeVietnameseTones(urgencyLevel);
   const toBookCode = row[4] || '';
@@ -306,7 +314,7 @@ const extractRowData = (row) => {
  * @param {Object} fields - Các trường dữ liệu cần kiểm tra.
  * @throws {Error} Nếu thiếu bất kỳ trường bắt buộc nào.
  */
-const validateRequiredFields = ({ toBook, abstractNote, senderUnit, receiverUnit }) => {
+const validateRequiredFields = ({ toBook, abstractNote, senderUnit, toBookNumber, receiverUnit }) => {
   if (!toBook) {
     throw new Error('Thiếu số văn bản - cột 1');
   }
@@ -316,8 +324,12 @@ const validateRequiredFields = ({ toBook, abstractNote, senderUnit, receiverUnit
   if (!senderUnit) {
     throw new Error('Thiếu đơn vị gửi - cột 6');
   }
-  if (!receiverUnit) {
-    throw new Error('Thiếu đơn vị nhận - cột 10');
+  if (typeof toBookNumber === 'number' && !isNaN(toBookNumber)) {
+    throw new Error('Số văn bản đến p là số - cột 3');
+  }
+  const receiver = ['company', 'department', 'stock', 'factory', 'workshop', 'salePoint', 'corporation'];
+  if (!receiver.includes(receiverUnit)) {
+    throw new Error('Đơn vị nhận phải là 1 trong những loại cho trước - cột 10');
   }
 };
 
@@ -327,7 +339,7 @@ const validateRequiredFields = ({ toBook, abstractNote, senderUnit, receiverUnit
  * @param {Array} arrFiles - Mảng tên file cần xử lý.
  * @returns {Promise<Array>} Mảng các đối tượng file đã được xử lý và lưu trữ.
  */
-const processAttachments = async (dataAttachments, arrFiles) => {
+const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
   const resultFile = [];
 
   // kiểm tra trường files có tồn tại và phần tử nào thuộc file đính kèm ko
@@ -341,6 +353,30 @@ const processAttachments = async (dataAttachments, arrFiles) => {
         // Nếu file chưa tồn tại, tạo một bản ghi mới
         existingFile = new fileManager({
           ...file,
+          parentPath: folderToSave, // pwd thư mục lưu file
+          username: 1, // fix cứng id của user thực hiện upload
+          isFile: true, // fix cứng giá trị true
+          realName: `${folderToSave}/${file.name}`,
+          clientId: 'DHVB', // fix cứng, k quan tâm
+          code: 'company', //
+          nameRoot: `${folderToSave}/${file.name}`, // như trên
+          createdBy: '2024/25/8', // fix cứng
+          smartForm: '',
+          isFileSync: false,
+          folderChild: false,
+          isStarred: false,
+          isEncryption: false,
+          shares: [],
+          isConvert: false,
+          internalTextIds: [],
+          canDelete: true,
+          canEdit: true,
+          status: 1,
+          isApprove: false,
+          public: 0,
+          permissions: [],
+          users: [],
+          hasChild: false,
         });
       } else {
         // Nếu file đã tồn tại, cập nhật thông tin của nó

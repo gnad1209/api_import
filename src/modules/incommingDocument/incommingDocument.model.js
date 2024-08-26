@@ -37,7 +37,7 @@ const documentSchema = new mongoose.Schema(
   {
     collection: 'Document',
     timestamps: true,
-  }, // Lưu trữ trong collection 'results' và thêm timestamp tự động.
+  },
 );
 
 module.exports = conn.model('Document', documentSchema);
