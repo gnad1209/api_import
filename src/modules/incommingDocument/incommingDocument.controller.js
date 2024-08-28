@@ -76,7 +76,8 @@ const importDataInZipFile = async (req, res, next) => {
       await deleteFolderAndContent(folderToSave);
       return res.status(400).json({ status: 0, message: 'Import bản ghi thất bại' });
     }
-    return res.status(200).json({ status: 1, data });
+    const document = service.selectFields(data.saveDocument);
+    return res.status(200).json({ status: 1, data: { document, files: data.savedFiles } });
   } catch (e) {
     return res.status(400).json(e);
   }

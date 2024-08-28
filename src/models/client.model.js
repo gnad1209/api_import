@@ -9,9 +9,9 @@ const clientSchema = new mongoose.Schema(
     usedStorage: { type: Number },
   },
   {
-    collection: 'Client',
+    collection: 'client',
     timestamps: true,
   }, // Lưu trữ trong collection 'results' và thêm timestamp tự động.
 );
 
-module.exports = conn.model('Client', clientSchema);
+module.exports = conn.model('client', clientSchema);

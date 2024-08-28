@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const Document = require('./incommingDocument.model');
-const Receiver = require('../../models/receiver.model');
+const organizationUnit = require('../../models/organizationUnit.model');
 const fileManager = require('../../models/fileManager.model');
 const Client = require('../../models/client.model');
 const unzipper = require('unzipper');
@@ -210,27 +210,34 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
         const resultFile = await processAttachments(dataAttachments, arrFiles, folderToSave);
         allResultFiles.push(...resultFile); // Lưu tất cả các file mới vào mảng allResultFiles
 
-        let receiver = await Receiver.findOne({ type: rowData.receiverUnit });
+        let receiver = await organizationUnit.findOne({ name: 'receiver', type: rowData.receiverUnit });
+        let processor = await organizationUnit.findOne({ name: 'processor', type: rowData.processorUnits });
+
         if (!receiver) {
-          receiver = new Receiver({ name: rowData.receiverUnit });
+          receiver = new organizationUnit({ name: 'receiver', type: rowData.receiverUnit });
           await receiver.save();
         }
-
-        const document = createDocument(rowData, receiver, resultFile);
-        const savedDocument = await Document.create(document); // Lưu tài liệu vào DB và lấy ID
+        if (!processor) {
+          processor = new organizationUnit({ name: 'processor', type: rowData.processorUnits });
+          await processor.save();
+        }
+        const document = createDocument(rowData, receiver, processor, resultFile);
 
         // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
         for (const file of resultFile) {
-          Array.from(file.mid);
-          file.mid.push(savedDocument._id);
+          if (!file.mid) file.mid = document._id;
+          else throw new Error(`file đính kèm ${file.name} của vản bản có id ${file.mid}`);
           await file.save();
         }
 
-        resultDocs.push(savedDocument);
+        resultDocs.push(document);
       }
     }
+
+    const savedDocument = await Document.insertMany(resultDocs); // Lưu tài liệu vào DB và lấy ID
+
     // Trả về những bản ghi mới từ file excel và file đính kèm
-    return { saveDocument: resultDocs, savedFiles: allResultFiles };
+    return { saveDocument: savedDocument, savedFiles: allResultFiles };
   } catch (error) {
     return error;
   }
@@ -313,7 +320,7 @@ const extractRowData = (row) => {
  * @param {Object} fields - Các trường dữ liệu cần kiểm tra.
  * @throws {Error} Nếu thiếu bất kỳ trường bắt buộc nào.
  */
-const validateRequiredFields = ({ toBook, abstractNote, senderUnit, toBookNumber, receiverUnit }) => {
+const validateRequiredFields = ({ toBook, abstractNote, senderUnit, toBookNumber, receiverUnit, processorUnits }) => {
   if (!toBook) {
     throw new Error('Thiếu số văn bản - cột 1');
   }
@@ -324,14 +331,17 @@ const validateRequiredFields = ({ toBook, abstractNote, senderUnit, toBookNumber
     throw new Error('Thiếu đơn vị gửi - cột 6');
   }
 
-  // if (typeof Number(toBookNumber) === 'number' && !isNaN(Number(toBookNumber))) {
-  //   throw new Error('Số văn bản đến phải là số - cột 3');
-  // }
+  if (typeof Number(toBookNumber) !== 'number' && !isNaN(Number(toBookNumber))) {
+    throw new Error('Số văn bản đến phải là số - cột 3');
+  }
 
-  // const receiver = ['company', 'department', 'stock', 'factory', 'workshop', 'salePoint', 'corporation'];
-  // if (!receiver.includes(receiverUnit)) {
-  //   throw new Error('Đơn vị nhận phải là 1 trong những loại cho trước - cột 10');
-  // }
+  const organizationUnit = ['company', 'department', 'stock', 'factory', 'workshop', 'salePoint', 'corporation'];
+  if (!organizationUnit.includes(receiverUnit)) {
+    throw new Error('Đơn vị nhận phải là 1 trong những loại cho trước - cột 10');
+  }
+  if (!organizationUnit.includes(processorUnits)) {
+    throw new Error('Đơn vị xử lý phải là 1 trong những loại cho trước - cột 11');
+  }
 };
 
 /**
@@ -361,7 +371,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
           clientId: 'DHVB', // fix cứng, k quan tâm
           code: 'company', //
           nameRoot: `${folderToSave}/${file.name}`, // như trên
-          createdBy: '2024/25/8', // fix cứng
+          createdBy: 'usercreated', // fix cứng
           smartForm: '',
           isFileSync: false,
           folderChild: false,
@@ -399,12 +409,69 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
  * @param {Array} resultFile - Mảng các file đã xử lý.
  * @returns {Object} Đối tượng document mới.
  */
-const createDocument = (rowData, receiver, resultFile) => {
+const createDocument = (rowData, receiver, processor, resultFile) => {
   return {
     ...rowData,
     files: resultFile.length >= 1 ? resultFile.map((item) => item._id) : null,
     receiverUnit: receiver._id ? receiver._id : rowData.receiverUnit,
+    processorUnits: processor._id ? processor._id : rowData.processorUnits,
   };
+};
+
+/**
+ * Lấy dữ liệu bản ghi các văn bản vừa đc tạo
+ * @param {Object} data - Dữ liệu bản ghi
+ * @returns {Object} Đối tượng document mới.
+ */
+const selectFields = (data) => {
+  const document = data.map(
+    ({
+      toBook,
+      abstractNote,
+      toBookNumber,
+      urgencyLevel,
+      toBookCode,
+      senderUnit,
+      files,
+      bookDocumentId,
+      secondBook,
+      receiverUnit,
+      processorUnits,
+      documentType,
+      documentField,
+      receiveMethod,
+      privateLevel,
+      currentNote,
+      currentRole,
+      nextRole,
+      letterType,
+      processAuthorString,
+      toBookCodeDepartment,
+    }) => ({
+      toBook,
+      abstractNote,
+      toBookNumber,
+      urgencyLevel,
+      toBookCode,
+      senderUnit,
+      files,
+      bookDocumentId,
+      secondBook,
+      receiverUnit,
+      processorUnits,
+      documentType,
+      documentField,
+      receiveMethod,
+      privateLevel,
+      currentNote,
+      currentRole,
+      nextRole,
+      letterType,
+      processAuthorString,
+      toBookCodeDepartment,
+    }),
+  );
+  return document;
 };
 
 module.exports = {
@@ -414,4 +481,5 @@ module.exports = {
   getDataFromExcelFile,
   processData,
   checkStorage,
+  selectFields,
 };

@@ -17,7 +17,7 @@ const documentSchema = new mongoose.Schema(
     senderUnit_en: { type: String },
     bookDocumentId: { type: String },
     secondBook: { type: String },
-    receiverUnit: { type: mongoose.Schema.Types.ObjectId, ref: 'Receiver' },
+    receiverUnit: { type: mongoose.Schema.Types.ObjectId, ref: 'organizationUnit' },
     processorUnits: { type: String },
     documentType: { type: String },
     documentType_en: { type: String },
@@ -35,9 +35,9 @@ const documentSchema = new mongoose.Schema(
     toBookCodeDepartment: { type: String },
   },
   {
-    collection: 'Document',
+    collection: 'document',
     timestamps: true,
   },
 );
 
-module.exports = conn.model('Document', documentSchema);
+module.exports = conn.model('document', documentSchema);

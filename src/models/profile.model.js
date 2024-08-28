@@ -16,9 +16,9 @@ const profileSchema = new mongoose.Schema(
     sortIndex: { type: String },
   },
   {
-    collection: 'Profile',
+    collection: 'profile',
     timestamps: true,
   }, // Lưu trữ trong collection 'results' và thêm timestamp tự động.
 );
 
-module.exports = conn.model('Profile', profileSchema);
+module.exports = conn.model('profile', profileSchema);

@@ -1,7 +1,7 @@
 const conn = require('../config/appConn');
 const mongoose = require('mongoose');
 
-const receiverSchema = new mongoose.Schema(
+const organizationUnitSchema = new mongoose.Schema(
   {
     name: { type: String },
     type: {
@@ -12,9 +12,9 @@ const receiverSchema = new mongoose.Schema(
     },
   },
   {
-    collection: 'Receiver',
+    collection: 'organizationUnit',
     timestamps: true,
   }, // Lưu trữ trong collection 'results' và thêm timestamp tự động.
 );
 
-module.exports = conn.model('Receiver', receiverSchema);
+module.exports = conn.model('organizationUnit', organizationUnitSchema);
