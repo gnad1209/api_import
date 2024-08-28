@@ -5,7 +5,6 @@ const incommingDocumentRoute = require('../modules/incommingDocument/incommingDo
 const outgoingDocumentRoute = require('../modules/outgoingDocument/outgoingDocument.route');
 
 router.use('/incommingDocument', incommingDocumentRoute);
-router.use('/import/outgoingDocument', outgoingDocumentRoute);
-
+router.use('/outgoingDocument', outgoingDocumentRoute);
 
 module.exports = router;
