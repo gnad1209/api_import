@@ -1,0 +1,1 @@
+{"sentences":[{"trans":"TRANG CHỦ","orig":"TRANG CHỦ","backend":5}],"src":"vi","confidence":1.0,"spell":{},"ld_result":{"srclangs":["vi"],"srclangs_confidences":[1.0],"extended_srclangs":["vi"]}}

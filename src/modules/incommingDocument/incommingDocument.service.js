@@ -202,6 +202,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
 
       // Kiểm tra bản ghi đã tồn tại các trường duy nhất chưa
       if (!documentIncomming) {
+        //chuyển chuỗi các tên file từ excel thành mảng
         const arrFiles = rowData.files
           .trim()
           .split(',')
@@ -221,19 +222,18 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
           processor = new organizationUnit({ name: 'processor', type: rowData.processorUnits });
           await processor.save();
         }
-        const document = createDocument(rowData, receiver, processor, resultFile);
+        const document = await createDocument(rowData, receiver, processor, resultFile);
 
         // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
         for (const file of resultFile) {
-          if (!file.mid) file.mid = document._id;
-          else throw new Error(`file đính kèm ${file.name} của vản bản có id ${file.mid}`);
+          if (!file.mid) {
+            file.mid = document._id;
+          } else throw new Error(`file đính kèm ${file.name} của vản bản có id ${file.mid}`);
           await file.save();
         }
-
         resultDocs.push(document);
       }
     }
-
     const savedDocument = await Document.insertMany(resultDocs); // Lưu tài liệu vào DB và lấy ID
 
     // Trả về những bản ghi mới từ file excel và file đính kèm
@@ -253,8 +253,7 @@ const extractRowData = (row) => {
   const toBook_en = removeVietnameseTones(toBook);
   const abstractNote = row[1] || '';
   const abstractNote_en = removeVietnameseTones(abstractNote);
-  // const toBookNumber = row[2] || '';
-  const toBookNumber = 2;
+  const toBookNumber = row[2] || '';
   const urgencyLevel = row[3] || '';
   const urgencyLevel_en = removeVietnameseTones(urgencyLevel);
   const toBookCode = row[4] || '';
@@ -365,7 +364,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
         existingFile = new fileManager({
           ...file,
           parentPath: folderToSave, // pwd thư mục lưu file
-          username: 1, // fix cứng id của user thực hiện upload
+          username: 'userCreate', // fix cứng id của user thực hiện upload
           isFile: true, // fix cứng giá trị true
           realName: `${folderToSave}/${file.name}`,
           clientId: 'DHVB', // fix cứng, k quan tâm
@@ -410,20 +409,21 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
  * @returns {Object} Đối tượng document mới.
  */
 const createDocument = (rowData, receiver, processor, resultFile) => {
-  return {
+  const document = new Document({
     ...rowData,
     files: resultFile.length >= 1 ? resultFile.map((item) => item._id) : null,
     receiverUnit: receiver._id ? receiver._id : rowData.receiverUnit,
     processorUnits: processor._id ? processor._id : rowData.processorUnits,
-  };
+  });
+  return document;
 };
 
 /**
- * Lấy dữ liệu bản ghi các văn bản vừa đc tạo
+ * chọn các trường từ bản ghi vừa được tạo
  * @param {Object} data - Dữ liệu bản ghi
  * @returns {Object} Đối tượng document mới.
  */
-const selectFields = (data) => {
+const selectFieldsDocument = (data) => {
   const document = data.map(
     ({
       toBook,
@@ -463,7 +463,7 @@ const selectFields = (data) => {
       documentField,
       receiveMethod,
       privateLevel,
-      currentNote,
+      currentNote, //
       currentRole,
       nextRole,
       letterType,
@@ -474,6 +474,23 @@ const selectFields = (data) => {
   return document;
 };
 
+/**
+ * chọn các trường từ bản ghi vừa được tạo
+ * @param {Object} data - Dữ liệu file
+ * @returns {Object} Đối tượng document mới.
+ */
+const selectFieldsFile = (data) => {
+  const file = data.map(({ fullPath, name, parentPath, username, realName, mid }) => ({
+    fullPath,
+    name,
+    parentPath,
+    username,
+    realName,
+    mid,
+  }));
+  return file;
+};
+
 module.exports = {
   unzipFile,
   getPathOfChildFileZip,
@@ -481,5 +498,6 @@ module.exports = {
   getDataFromExcelFile,
   processData,
   checkStorage,
-  selectFields,
+  selectFieldsDocument,
+  selectFieldsFile,
 };

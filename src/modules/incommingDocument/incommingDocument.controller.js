@@ -42,12 +42,12 @@ const importDataInZipFile = async (req, res, next) => {
     }
 
     // Kiểm tra dung lượng còn lại của client
-    if (clientId) {
-      const checkStorage = await service.checkStorage(objPath, clientId, folderToSave);
-      if (!checkStorage) {
-        return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
-      }
-    }
+    // if (clientId) {
+    //   const checkStorage = await service.checkStorage(objPath, clientId, folderToSave);
+    //   if (!checkStorage) {
+    //     return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
+    //   }
+    // }
 
     //giải nén file đính kèm
     let extractFileAttachment = null;
@@ -76,8 +76,9 @@ const importDataInZipFile = async (req, res, next) => {
       await deleteFolderAndContent(folderToSave);
       return res.status(400).json({ status: 0, message: 'Import bản ghi thất bại' });
     }
-    const document = service.selectFields(data.saveDocument);
-    return res.status(200).json({ status: 1, data: { document, files: data.savedFiles } });
+    const document = service.selectFieldsDocument(data.saveDocument);
+    const files = service.selectFieldsFile(data.savedFiles);
+    return res.status(200).json({ status: 1, data: { document, files: files } });
   } catch (e) {
     return res.status(400).json(e);
   }
