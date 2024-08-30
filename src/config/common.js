@@ -4,7 +4,7 @@ const fsPromises = require('fs').promises;
 const XLSX = require('xlsx');
 const path = require('path');
 const fsExtra = require('fs-extra');
-
+const moment = require('moment');
 function removeVietnameseTones(str) {
   if (!str || typeof str !== 'string') return str;
   str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a');
@@ -136,6 +136,9 @@ function hasFileNameInArray(fileInfo, fileName, id) {
       id_doc: id,
     }));
 }
+const formatDate = (dateString) => {
+  return moment(dateString, 'DD/MM/YYYY', true).format('YYYY/MM/DD');
+};
 
 module.exports = {
   removeVietnameseTones,
@@ -144,4 +147,5 @@ module.exports = {
   readExcelDataAsArray,
   checkForSingleZipAndExcel,
   hasFileNameInArray,
+  formatDate,
 };

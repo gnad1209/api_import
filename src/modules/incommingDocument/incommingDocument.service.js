@@ -1,20 +1,23 @@
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
-const Document = require('./incommingDocument.model');
+const incommingDocument = require('./incommingDocument.model');
+const Document = require('../../models/document.model');
 const organizationUnit = require('../../models/organizationUnit.model');
 const fileManager = require('../../models/fileManager.model');
 const Client = require('../../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
-const iconv = require('iconv-lite');
+const moment = require('moment');
+
 const {
   removeVietnameseTones,
   existsPath,
   checkForSingleZipAndExcel,
   deleteFolderAndContent,
   hasFileNameInArray,
+  formatDate,
 } = require('../../config/common');
 /**
  * Nhận thông tin file nén, giải nén file và lưu vào folder mong muốn
@@ -197,8 +200,10 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
 
       // Validate dữ liệu từ file excel
       validateRequiredFields(rowData);
+      validateDates(rowData.documentDate, rowData.receiveDate, rowData.toBookDate, rowData.deadLine);
+
       // Chuyển đổi chuỗi files sang dạng mảng
-      let documentIncomming = await Document.findOne({ toBook: rowData.toBook });
+      let documentIncomming = await incommingDocument.findOne({ toBook: rowData.toBook });
 
       // Kiểm tra bản ghi đã tồn tại các trường duy nhất chưa
       if (!documentIncomming) {
@@ -207,22 +212,18 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
           .trim()
           .split(',')
           .map((item) => item.trim());
-
         const resultFile = await processAttachments(dataAttachments, arrFiles, folderToSave);
         allResultFiles.push(...resultFile); // Lưu tất cả các file mới vào mảng allResultFiles
 
-        let receiver = await organizationUnit.findOne({ name: 'receiver', type: rowData.receiverUnit });
-        let processor = await organizationUnit.findOne({ name: 'processor', type: rowData.processorUnits });
+        let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
 
-        if (!receiver) {
-          receiver = new organizationUnit({ name: 'receiver', type: rowData.receiverUnit });
-          await receiver.save();
+        if (tobookNumber) {
+          tobookNumber.number = Number(tobookNumber.number) + 1;
+          await tobookNumber.save();
+          rowData.toBookNumber = tobookNumber.number;
         }
-        if (!processor) {
-          processor = new organizationUnit({ name: 'processor', type: rowData.processorUnits });
-          await processor.save();
-        }
-        const document = await createDocument(rowData, receiver, processor, resultFile);
+
+        const document = await createDocument(rowData, resultFile);
 
         // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
         for (const file of resultFile) {
@@ -234,7 +235,8 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
         resultDocs.push(document);
       }
     }
-    const savedDocument = await Document.insertMany(resultDocs); // Lưu tài liệu vào DB và lấy ID
+
+    const savedDocument = await incommingDocument.insertMany(resultDocs);
 
     // Trả về những bản ghi mới từ file excel và file đính kèm
     return { saveDocument: savedDocument, savedFiles: allResultFiles };
@@ -263,22 +265,19 @@ const extractRowData = (row) => {
   const files = row[6] || '';
   const bookDocumentId = row[7] || '';
   const secondBook = row[8] || '';
-  const receiverUnit = row[9] || '';
-  const processorUnits = row[10] || '';
-  const documentType = row[11] || '';
+  const receiverUnit = 'Công an thành phố Hà Nội 1';
+  const documentType = row[10] || '';
   const documentType_en = removeVietnameseTones(documentType);
-  const documentField = row[12] || '';
+  const documentField = row[11] || '';
   const documentField_en = removeVietnameseTones(documentField);
-  const receiveMethod = row[13] || '';
+  const receiveMethod = row[12] || '';
   const receiveMethod_en = removeVietnameseTones(receiveMethod);
-  const privateLevel = row[14] || '';
+  const privateLevel = row[13] || '';
   const privateLevel_en = removeVietnameseTones(privateLevel);
-  const currentNote = row[15] || '';
-  const currentRole = row[16] || '';
-  const nextRole = row[17] || '';
-  const letterType = row[18] || '';
-  const processAuthorString = row[19] || '';
-  const toBookCodeDepartment = row[20] || '';
+  const documentDate = row[14] || '';
+  const receiveDate = row[15] || '';
+  const toBookDate = row[16] || '';
+  const deadLine = row[17] || '';
 
   return {
     toBook,
@@ -296,7 +295,6 @@ const extractRowData = (row) => {
     bookDocumentId,
     secondBook,
     receiverUnit,
-    processorUnits,
     documentType,
     documentType_en,
     documentField,
@@ -305,41 +303,122 @@ const extractRowData = (row) => {
     receiveMethod_en,
     privateLevel,
     privateLevel_en,
-    currentNote,
-    currentRole,
-    nextRole,
-    letterType,
-    processAuthorString,
-    toBookCodeDepartment,
+    documentDate,
+    receiveDate,
+    toBookDate,
+    deadLine,
   };
 };
 
 /**
- * Kiểm tra các trường bắt buộc có được cung cấp không.
+ * Kiểm tra các trường bắt buộc có được cung cấp đúng không.
  * @param {Object} fields - Các trường dữ liệu cần kiểm tra.
  * @throws {Error} Nếu thiếu bất kỳ trường bắt buộc nào.
  */
-const validateRequiredFields = ({ toBook, abstractNote, senderUnit, toBookNumber, receiverUnit, processorUnits }) => {
-  if (!toBook) {
-    throw new Error('Thiếu số văn bản - cột 1');
-  }
-  if (!abstractNote) {
-    throw new Error('Thiếu trích yếu - cột 2');
-  }
-  if (!senderUnit) {
-    throw new Error('Thiếu đơn vị gửi - cột 6');
+const validateRequiredFields = async (fields) => {
+  const requiredFields = {
+    toBook: 'Thiếu số văn bản - cột 1',
+    abstractNote: 'Thiếu trích yếu - cột 2',
+    senderUnit: 'Thiếu đơn vị gửi - cột 6',
+    documentDate: 'Thiếu ngày vb - cột 22',
+    receiveDate: 'Thiếu ngày nhận vb - cột 23',
+    toBookDate: 'Thiếu ngày vào sổ - cột 24',
+  };
+
+  const validationRules = {
+    receiveMethod: ['cong van giay', 'cong van dien tu'],
+    urgencyLevel: ['thuong', 'khan', 'thuong khan', 'hoa toc'],
+    privateLevel: ['mat', 'thuong', 'tuyet mat', 'toi mat'],
+    documentType: ['cong van', 'don thu', 'tuong trinh', 'quyet dinh'],
+    documentField: ['van ban quy pham phap luat', 'van ban hanh chinh', 'van ban chuyen nganh'],
+  };
+
+  // Kiểm tra các trường bắt buộc
+  for (const [field, errorMessage] of Object.entries(requiredFields)) {
+    if (!fields[field]) {
+      throw new Error(errorMessage);
+    }
   }
 
-  if (typeof Number(toBookNumber) !== 'number' && !isNaN(Number(toBookNumber))) {
-    throw new Error('Số văn bản đến phải là số - cột 3');
+  // Kiểm tra các trường theo giá trị hợp lệ
+  for (const [field, validValues] of Object.entries(validationRules)) {
+    const value = fields[`${field}_en`] || '';
+    if (!validValues.includes(value)) {
+      throw new Error(`giá trị ${field} phải là 1 trong những loại cho trước - cột ${getColumnNumber(field)}`);
+    }
   }
 
-  const organizationUnit = ['company', 'department', 'stock', 'factory', 'workshop', 'salePoint', 'corporation'];
-  if (!organizationUnit.includes(receiverUnit)) {
-    throw new Error('Đơn vị nhận phải là 1 trong những loại cho trước - cột 10');
+  // Kiểm tra document tồn tại
+  const document = await Document.findOne({ name: fields.toBookNumber });
+  if (!document) {
+    throw new Error('Không tìm thấy văn bản đến - cột 3');
   }
-  if (!organizationUnit.includes(processorUnits)) {
-    throw new Error('Đơn vị xử lý phải là 1 trong những loại cho trước - cột 11');
+};
+
+/**
+ * Trả về số cột tương ứng với tên trường.
+ * @param {string} field - Tên trường.
+ * @returns {number} Số cột.
+ */
+const getColumnNumber = (field) => {
+  const columnMap = {
+    receiveMethod: 12,
+    urgencyLevel: 4,
+    privateLevel: 14,
+    documentType: 11,
+    documentField: 12,
+  };
+
+  return columnMap[field];
+};
+
+/**
+ * Validate ngày tháng.
+ * @param {string} documentDate - Ngày văn bản.
+ * @param {string} receiveDate - ngày nhận văn bản đến.
+ * @param {string} toBookDate - ngày vào sổ.
+ * @param {string} deadLine - hạn được giao.
+ * @returns {number} Số cột.
+ */
+const validateDates = (documentDate, receiveDate, toBookDate, deadLine) => {
+  // Đổi định dạng các ngày về YYYY/MM/DD
+  const docDate = moment(documentDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
+  const recDate = moment(receiveDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
+  const toBkDate = moment(toBookDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
+  let dlDate;
+  if (deadLine) {
+    dlDate = moment(deadLine, 'DD/MM/YYYY').format('YYYY/MM/DD');
+  }
+
+  const today = moment().format('YYYY/MM/DD');
+
+  if (!moment(docDate, 'YYYY/MM/DD', true).isValid()) {
+    throw new Error('Ngày tài liệu (documentDate) không hợp lệ');
+  }
+  if (!moment(recDate, 'YYYY/MM/DD', true).isValid()) {
+    throw new Error('Ngày nhận (receiveDate) không hợp lệ');
+  }
+  if (!moment(toBkDate, 'YYYY/MM/DD', true).isValid()) {
+    throw new Error('Ngày gửi vào sổ (toBookDate) không hợp lệ');
+  }
+  if (!moment(dlDate, 'YYYY/MM/DD', true).isValid()) {
+    throw new Error('Hạn chót (deadLine) không hợp lệ');
+  }
+
+  if (moment(docDate).isAfter(today)) {
+    throw new Error('Ngày tài liệu (documentDate) không được lớn hơn ngày hiện tại');
+  }
+
+  if (moment(recDate).isBefore(docDate)) {
+    throw new Error('Ngày nhận (receiveDate) không được nhỏ hơn ngày tài liệu (documentDate)');
+  }
+
+  if (moment(toBkDate).isBefore(docDate)) {
+    throw new Error('Ngày gửi vào sổ (toBookDate) không được nhỏ hơn ngày tài liệu (documentDate)');
+  }
+
+  if (moment(dlDate).isBefore(today)) {
+    throw new Error('Hạn chót (deadLine) không được nhỏ hơn ngày hiện tại');
   }
 };
 
@@ -349,6 +428,7 @@ const validateRequiredFields = ({ toBook, abstractNote, senderUnit, toBookNumber
  * @param {Array} arrFiles - Mảng tên file cần xử lý.
  * @returns {Promise<Array>} Mảng các đối tượng file đã được xử lý và lưu trữ.
  */
+
 const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
   const resultFile = [];
 
@@ -408,12 +488,12 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
  * @param {Array} resultFile - Mảng các file đã xử lý.
  * @returns {Object} Đối tượng document mới.
  */
-const createDocument = (rowData, receiver, processor, resultFile) => {
-  const document = new Document({
+const createDocument = (rowData, resultFile) => {
+  const document = new incommingDocument({
     ...rowData,
     files: resultFile.length >= 1 ? resultFile.map((item) => item._id) : null,
-    receiverUnit: receiver._id ? receiver._id : rowData.receiverUnit,
-    processorUnits: processor._id ? processor._id : rowData.processorUnits,
+    // receiverUnit: receiver._id ? receiver._id : rowData.receiverUnit,
+    // processorUnits: processor._id ? processor._id : rowData.processorUnits,
   });
   return document;
 };
@@ -436,17 +516,14 @@ const selectFieldsDocument = (data) => {
       bookDocumentId,
       secondBook,
       receiverUnit,
-      processorUnits,
       documentType,
       documentField,
       receiveMethod,
       privateLevel,
-      currentNote,
-      currentRole,
-      nextRole,
-      letterType,
-      processAuthorString,
-      toBookCodeDepartment,
+      documentDate,
+      receiveDate,
+      toBookDate,
+      deadLine,
     }) => ({
       toBook,
       abstractNote,
@@ -458,17 +535,14 @@ const selectFieldsDocument = (data) => {
       bookDocumentId,
       secondBook,
       receiverUnit,
-      processorUnits,
       documentType,
       documentField,
       receiveMethod,
       privateLevel,
-      currentNote, //
-      currentRole,
-      nextRole,
-      letterType,
-      processAuthorString,
-      toBookCodeDepartment,
+      documentDate,
+      receiveDate,
+      toBookDate,
+      deadLine,
     }),
   );
   return document;
