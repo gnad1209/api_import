@@ -5,3 +5,4 @@ node_modules/
 
 src/modules/files/
 src/modules/uploads/
+src/uploads/

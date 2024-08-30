@@ -3,13 +3,15 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const incommingDocument = require('./incommingDocument.model');
 const Document = require('../../models/document.model');
-const organizationUnit = require('../../models/organizationUnit.model');
+const crmSourceRaw = require('../../models/crmSourceRaw.model');
 const fileManager = require('../../models/fileManager.model');
 const Client = require('../../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
 const moment = require('moment');
+const crmSourceInit = require('./crmSource.init');
+
 const fakeValue = require('./fakeValue.json');
 const {
   removeVietnameseTones,
@@ -325,10 +327,17 @@ const validateRequiredFields = async (fields) => {
     receiveDate: 'Thiếu ngày nhận vb - cột 16',
     toBookDate: 'Thiếu ngày vào sổ - cột 17',
   };
+  console.error('===============================');
+
+  if (Array.isArray(crmSourceInit.crmSource)) {
+    for (const element of crmSourceInit.crmSource) {
+      console.log(element.code);
+    }
+  }
 
   const validationRules = {
     receiveMethod: ['cong van giay', 'cong van dien tu'],
-    urgencyLevel: ['thuong', 'khan', 'thuong khan', 'hoa toc'],
+    urgencyLevel: ['thuong', 'khan', 'thuong khan', 'hoa toc'], // do khan
     privateLevel: ['mat', 'thuong', 'tuyet mat', 'toi mat'],
     documentType: ['cong van', 'don thu', 'tuong trinh', 'quyet dinh'],
     documentField: ['van ban quy pham phap luat', 'van ban hanh chinh', 'van ban chuyen nganh'],
