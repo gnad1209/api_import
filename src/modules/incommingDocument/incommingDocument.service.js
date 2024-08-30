@@ -215,10 +215,16 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
         allResultFiles.push(...resultFile); // Lưu tất cả các file mới vào mảng allResultFiles
 
         let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
+        let senderUnit = await Document.findOne({ name: rowData.senderUnit, type: 'senderUnit' });
 
+        if (!senderUnit) {
+          senderUnit = new organizationUnit({ name: rowData.senderUnit, type: 'senderUnit' });
+          await senderUnit.save();
+        }
         if (tobookNumber) {
           tobookNumber.number = Number(tobookNumber.number) + 1;
           await tobookNumber.save();
+          rowData.bookDocumentId = tobookNumber._id;
           rowData.toBookNumber = tobookNumber.number;
         }
 
@@ -257,26 +263,24 @@ const extractRowData = (row) => {
   const toBookNumber = row[2] || '';
   const urgencyLevel = row[3] || '';
   const urgencyLevel_en = removeVietnameseTones(urgencyLevel);
-  const toBookCode = row[4] || '';
-  const toBookCode_en = removeVietnameseTones(toBookCode);
-  const senderUnit = row[5] || '';
+  const senderUnit = row[4] || '';
   const senderUnit_en = removeVietnameseTones(senderUnit);
-  const files = row[6] || '';
-  const bookDocumentId = row[7] || '';
-  const secondBook = row[8] || '';
+  const files = row[5] || '';
+  const bookDocumentId = row[6] || '';
+  const secondBook = row[7] || '';
   const receiverUnit = 'Công an thành phố Hà Nội 1';
-  const documentType = row[10] || '';
+  const documentType = row[8] || '';
   const documentType_en = removeVietnameseTones(documentType);
-  const documentField = row[11] || '';
+  const documentField = row[9] || '';
   const documentField_en = removeVietnameseTones(documentField);
-  const receiveMethod = row[12] || '';
+  const receiveMethod = row[10] || '';
   const receiveMethod_en = removeVietnameseTones(receiveMethod);
-  const privateLevel = row[13] || '';
+  const privateLevel = row[11] || '';
   const privateLevel_en = removeVietnameseTones(privateLevel);
-  const documentDate = row[14] || '';
-  const receiveDate = row[15] || '';
-  const toBookDate = row[16] || '';
-  const deadLine = row[17] || '';
+  const documentDate = row[12] || '';
+  const receiveDate = row[13] || '';
+  const toBookDate = row[14] || '';
+  const deadLine = row[15] || '';
 
   return {
     toBook,
@@ -286,8 +290,6 @@ const extractRowData = (row) => {
     toBookNumber,
     urgencyLevel,
     urgencyLevel_en,
-    toBookCode,
-    toBookCode_en,
     senderUnit,
     senderUnit_en,
     files,
@@ -319,9 +321,9 @@ const validateRequiredFields = async (fields) => {
     toBook: 'Thiếu số văn bản - cột 1',
     abstractNote: 'Thiếu trích yếu - cột 2',
     senderUnit: 'Thiếu đơn vị gửi - cột 6',
-    documentDate: 'Thiếu ngày vb - cột 22',
-    receiveDate: 'Thiếu ngày nhận vb - cột 23',
-    toBookDate: 'Thiếu ngày vào sổ - cột 24',
+    documentDate: 'Thiếu ngày vb - cột 15',
+    receiveDate: 'Thiếu ngày nhận vb - cột 16',
+    toBookDate: 'Thiếu ngày vào sổ - cột 17',
   };
 
   const validationRules = {
@@ -361,11 +363,11 @@ const validateRequiredFields = async (fields) => {
  */
 const getColumnNumber = (field) => {
   const columnMap = {
-    receiveMethod: 13,
+    receiveMethod: 11,
     urgencyLevel: 4,
-    privateLevel: 14,
-    documentType: 11,
-    documentField: 12,
+    privateLevel: 12,
+    documentType: 9,
+    documentField: 10,
   };
 
   return columnMap[field];
@@ -425,6 +427,11 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadLine) => {
  * Xử lý các file đính kèm từ dữ liệu đầu vào.
  * @param {Array} dataAttachments - Mảng dữ liệu file đính kèm.
  * @param {Array} arrFiles - Mảng tên file cần xử lý.
+ * @param {Array} folderToSave - Đường dẫn folder sau khi giải nén.
+ * @param {Array} clientId - client Id.
+ * @param {Array} username - tên người dùng import dữ liệu.
+ * @param {Array} createdBy - id người tạo bản ghi file.
+ * @param {Array} code - Đại diện cho module upload file.
  * @returns {Promise<Array>} Mảng các đối tượng file đã được xử lý và lưu trữ.
  */
 
@@ -510,7 +517,6 @@ const selectFieldsDocument = (data) => {
       abstractNote,
       toBookNumber,
       urgencyLevel,
-      toBookCode,
       senderUnit,
       files,
       bookDocumentId,
@@ -529,7 +535,6 @@ const selectFieldsDocument = (data) => {
       abstractNote,
       toBookNumber,
       urgencyLevel,
-      toBookCode,
       senderUnit,
       files,
       bookDocumentId,
