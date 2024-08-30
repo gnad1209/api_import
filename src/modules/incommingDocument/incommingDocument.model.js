@@ -1,7 +1,8 @@
 const conn = require('../../config/appConn');
 const mongoose = require('mongoose');
+const moment = require('moment');
 
-const documentSchema = new mongoose.Schema(
+const incommingDocumentSchema = new mongoose.Schema(
   {
     toBook: { type: String },
     toBook_en: { type: String },
@@ -17,7 +18,8 @@ const documentSchema = new mongoose.Schema(
     senderUnit_en: { type: String },
     bookDocumentId: { type: String },
     secondBook: { type: String },
-    receiverUnit: { type: mongoose.Schema.Types.ObjectId, ref: 'organizationUnit' },
+    // receiverUnit: { type: mongoose.Schema.Types.ObjectId, ref: 'organizationUnit' },
+    receiverUnit: { type: String },
     processorUnits: { type: String },
     documentType: { type: String },
     documentType_en: { type: String },
@@ -33,11 +35,15 @@ const documentSchema = new mongoose.Schema(
     letterType: { type: String },
     processAuthorString: { type: String },
     toBookCodeDepartment: { type: String },
+    documentDate: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
+    receiveDate: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
+    toBookDate: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
+    deadLine: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
   },
   {
-    collection: 'document',
+    collection: 'incommingDocument',
     timestamps: true,
   },
 );
 
-module.exports = conn.model('document', documentSchema);
+module.exports = conn.model('incommingDocument', incommingDocumentSchema);
