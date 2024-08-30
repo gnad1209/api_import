@@ -3,13 +3,14 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const incommingDocument = require('./incommingDocument.model');
 const Document = require('../../models/document.model');
-const organizationUnit = require('../../models/organizationUnit.model');
+const crmSourceRaw = require('../../models/crmSourceRaw.model');
 const fileManager = require('../../models/fileManager.model');
 const Client = require('../../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
 const moment = require('moment');
+const crmSourceInit = require('./crmSource.init');
 
 const {
   removeVietnameseTones,
@@ -206,34 +207,34 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
       let documentIncomming = await incommingDocument.findOne({ toBook: rowData.toBook });
 
       // Kiểm tra bản ghi đã tồn tại các trường duy nhất chưa
-      if (!documentIncomming) {
-        //chuyển chuỗi các tên file từ excel thành mảng
-        const arrFiles = rowData.files
-          .trim()
-          .split(',')
-          .map((item) => item.trim());
-        const resultFile = await processAttachments(dataAttachments, arrFiles, folderToSave);
-        allResultFiles.push(...resultFile); // Lưu tất cả các file mới vào mảng allResultFiles
+      // if (!documentIncomming) {
+      //chuyển chuỗi các tên file từ excel thành mảng
+      const arrFiles = rowData.files
+        .trim()
+        .split(',')
+        .map((item) => item.trim());
+      const resultFile = await processAttachments(dataAttachments, arrFiles, folderToSave);
+      allResultFiles.push(...resultFile); // Lưu tất cả các file mới vào mảng allResultFiles
 
-        let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
+      let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
 
-        if (tobookNumber) {
-          tobookNumber.number = Number(tobookNumber.number) + 1;
-          await tobookNumber.save();
-          rowData.toBookNumber = tobookNumber.number;
-        }
-
-        const document = await createDocument(rowData, resultFile);
-
-        // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
-        for (const file of resultFile) {
-          if (!file.mid) {
-            file.mid = document._id;
-          } else throw new Error(`file đính kèm ${file.name} của vản bản có id ${file.mid}`);
-          await file.save();
-        }
-        resultDocs.push(document);
+      if (tobookNumber) {
+        tobookNumber.number = Number(tobookNumber.number) + 1;
+        await tobookNumber.save();
+        rowData.toBookNumber = tobookNumber.number;
       }
+
+      const document = await createDocument(rowData, resultFile);
+
+      // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
+      for (const file of resultFile) {
+        if (!file.mid) {
+          file.mid = document._id;
+        } else throw new Error(`file đính kèm ${file.name} của vản bản có id ${file.mid}`);
+        await file.save();
+      }
+      resultDocs.push(document);
+      // }
     }
 
     const savedDocument = await incommingDocument.insertMany(resultDocs);
@@ -324,10 +325,17 @@ const validateRequiredFields = async (fields) => {
     receiveDate: 'Thiếu ngày nhận vb - cột 23',
     toBookDate: 'Thiếu ngày vào sổ - cột 24',
   };
+  console.error('===============================');
+
+  if (Array.isArray(crmSourceInit.crmSource)) {
+    for (const element of crmSourceInit.crmSource) {
+      console.log(element.code);
+    }
+  }
 
   const validationRules = {
     receiveMethod: ['cong van giay', 'cong van dien tu'],
-    urgencyLevel: ['thuong', 'khan', 'thuong khan', 'hoa toc'],
+    urgencyLevel: ['thuong', 'khan', 'thuong khan', 'hoa toc'], // do khan
     privateLevel: ['mat', 'thuong', 'tuyet mat', 'toi mat'],
     documentType: ['cong van', 'don thu', 'tuong trinh', 'quyet dinh'],
     documentField: ['van ban quy pham phap luat', 'van ban hanh chinh', 'van ban chuyen nganh'],
