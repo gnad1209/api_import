@@ -10,14 +10,13 @@ const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
 const moment = require('moment');
-
+const fakeValue = require('./fakeValue.json');
 const {
   removeVietnameseTones,
   existsPath,
   checkForSingleZipAndExcel,
   deleteFolderAndContent,
   hasFileNameInArray,
-  formatDate,
 } = require('../../config/common');
 /**
  * Nhận thông tin file nén, giải nén file và lưu vào folder mong muốn
@@ -362,7 +361,7 @@ const validateRequiredFields = async (fields) => {
  */
 const getColumnNumber = (field) => {
   const columnMap = {
-    receiveMethod: 12,
+    receiveMethod: 13,
     urgencyLevel: 4,
     privateLevel: 14,
     documentType: 11,
@@ -429,11 +428,12 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadLine) => {
  * @returns {Promise<Array>} Mảng các đối tượng file đã được xử lý và lưu trữ.
  */
 
-const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
+const processAttachments = async (dataAttachments, arrFiles, folderToSave, clientId, username, createdBy, code) => {
   const resultFile = [];
 
   // kiểm tra trường files có tồn tại và phần tử nào thuộc file đính kèm ko
   if (dataAttachments.length >= 1) {
+    // lấy mảng file đính kèm có tên tồn tại trong trường file ở excel
     const arrFileAttachments = await hasFileNameInArray(dataAttachments, arrFiles);
     // lặp mảng file vừa lấy được để thêm mới vào db
     for (const file of arrFileAttachments) {
@@ -443,30 +443,30 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave) => {
         // Nếu file chưa tồn tại, tạo một bản ghi mới
         existingFile = new fileManager({
           ...file,
-          parentPath: folderToSave, // pwd thư mục lưu file
-          username: 'userCreate', // fix cứng id của user thực hiện upload
-          isFile: true, // fix cứng giá trị true
+          parentPath: folderToSave,
+          username: username,
+          isFile: true,
           realName: `${folderToSave}/${file.name}`,
-          clientId: 'DHVB', // fix cứng, k quan tâm
-          code: 'company', //
-          nameRoot: `${folderToSave}/${file.name}`, // như trên
-          createdBy: 'usercreated', // fix cứng
-          smartForm: '',
-          isFileSync: false,
-          folderChild: false,
-          isStarred: false,
-          isEncryption: false,
-          shares: [],
-          isConvert: false,
-          internalTextIds: [],
-          canDelete: true,
-          canEdit: true,
-          status: 1,
-          isApprove: false,
-          public: 0,
-          permissions: [],
-          users: [],
-          hasChild: false,
+          clientId: clientId,
+          code: code,
+          nameRoot: `${folderToSave}/${file.name}`,
+          createdBy: createdBy,
+          smartForm: fakeValue.smartForm,
+          isFileSync: fakeValue.isFileSync,
+          folderChild: fakeValue.folderChild,
+          isStarred: fakeValue.isStarred,
+          isEncryption: fakeValue.isEncryption,
+          shares: fakeValue.shares,
+          isConvert: fakeValue.isConvert,
+          internalTextIds: fakeValue.internalTextIds,
+          canDelete: fakeValue.canDelete,
+          canEdit: fakeValue.canEdit,
+          status: fakeValue.status,
+          isApprove: fakeValue.isApprove,
+          public: fakeValue.public,
+          permissions: fakeValue.permissions,
+          users: fakeValue.users,
+          hasChild: fakeValue.hasChild,
         });
       } else {
         // Nếu file đã tồn tại, cập nhật thông tin của nó

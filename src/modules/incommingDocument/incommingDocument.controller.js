@@ -69,9 +69,19 @@ const importDataInZipFile = async (req, res, next) => {
     if (!dataExcel) {
       return res.status(400).json({ status: 0, message: 'Lấy dữ liệu từ file excel thất bại' });
     }
-
+    const username = 'username';
+    const createdBy = 'userCreated';
+    const code = 'userCreated';
     //xử lý dữ liệu lưu các bản ghi vào db
-    const data = await service.processData(dataExcel, dataFromAttachment, folderToSave);
+    const data = await service.processData(
+      dataExcel,
+      dataFromAttachment,
+      folderToSave,
+      clientId,
+      username,
+      createdBy,
+      code,
+    );
     if (data.saveDocument.length < 1) {
       await deleteFolderAndContent(folderToSave);
       return res.status(400).json({ status: 0, message: 'Import bản ghi thất bại' });
