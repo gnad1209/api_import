@@ -164,8 +164,9 @@ async function getDataFromExcelFile(filePath, check = false) {
     const workbook = xlsx.readFile(filePath);
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    // Lấy dữ liệu từ worksheet
-    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+    // Lấy dữ liệu từ worksheet, bắt đầu từ dòng thứ 2
+    const data = xlsx.utils.sheet_to_json(worksheet, { header: 1, range: 1 });
+
     return data;
   } catch (error) {
     console.error('Lỗi khi đọc file Excel:', error.message);
@@ -319,7 +320,6 @@ const validateRequiredFields = async (fields) => {
     receiveDate: 'Thiếu ngày nhận vb - cột 16',
     toBookDate: 'Thiếu ngày vào sổ - cột 17',
   };
-  console.error('===============================');
 
   if (Array.isArray(crmSourceInit.crmSource)) {
     for (const element of crmSourceInit.crmSource) {
