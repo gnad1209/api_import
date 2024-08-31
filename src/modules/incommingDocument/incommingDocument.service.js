@@ -11,6 +11,8 @@ const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
 const moment = require('moment');
+const crmSourceInit = require('./crmSource.init');
+
 const fakeValue = require('./fakeValue.json');
 const {
   removeVietnameseTones,
@@ -317,6 +319,13 @@ const validateRequiredFields = async (fields) => {
     receiveDate: 'Thiếu ngày nhận vb - cột 16',
     toBookDate: 'Thiếu ngày vào sổ - cột 17',
   };
+  console.error('===============================');
+
+  if (Array.isArray(crmSourceInit.crmSource)) {
+    for (const element of crmSourceInit.crmSource) {
+      console.log(element.code);
+    }
+  }
 
   const dataCrm = await crm.find();
   // console.log('dataCrm', dataCrm);
