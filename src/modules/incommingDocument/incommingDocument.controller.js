@@ -69,9 +69,10 @@ const importDataInZipFile = async (req, res, next) => {
     if (!dataExcel) {
       return res.status(400).json({ status: 0, message: 'Lấy dữ liệu từ file excel thất bại' });
     }
+    // dữ liệu mẫu
     const username = 'username';
     const createdBy = 'userCreated';
-    const code = 'userCreated';
+    const code = 'IncommingDocument';
     //xử lý dữ liệu lưu các bản ghi vào db
     const data = await service.processData(
       dataExcel,

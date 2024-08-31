@@ -267,6 +267,7 @@ const extractRowData = (row) => {
   const toBookNumber = row[2] || '';
   const urgencyLevel = row[3] || '';
   const senderUnit = row[4] || '';
+  const senderUnit_en = removeVietnameseTones(senderUnit);
   const files = row[5] || '';
   const secondBook = row[6] || '';
   const receiverUnit = 'Công an thành phố Hà Nội 1';
@@ -287,6 +288,7 @@ const extractRowData = (row) => {
     toBookNumber,
     urgencyLevel,
     senderUnit,
+    senderUnit_en,
     files,
     secondBook,
     receiverUnit,
