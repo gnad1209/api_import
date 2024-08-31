@@ -4,6 +4,8 @@ const fsPromises = require('fs').promises;
 const incommingDocument = require('./incommingDocument.model');
 const Document = require('../../models/document.model');
 const crmSourceRaw = require('../../models/crmSourceRaw.model');
+const crm = require('../../models/crmSource.model');
+const organizationUnit = require('../../models/organizationUnit.model');
 const fileManager = require('../../models/fileManager.model');
 const Client = require('../../models/client.model');
 const unzipper = require('unzipper');
@@ -198,7 +200,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
       if (row.length === 0) continue;
 
       const rowData = extractRowData(row);
-
       // Validate dữ liệu từ file excel
       validateRequiredFields(rowData);
       validateDates(rowData.documentDate, rowData.receiveDate, rowData.toBookDate, rowData.deadLine);
@@ -217,11 +218,16 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
         allResultFiles.push(...resultFile); // Lưu tất cả các file mới vào mảng allResultFiles
 
         let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
-        let senderUnit = await Document.findOne({ name: rowData.senderUnit, type: 'senderUnit' });
+        let senderUnit = await organizationUnit.findOne({ value: rowData.senderUnit, type: 'senderUnit' });
 
         if (!senderUnit) {
-          senderUnit = new organizationUnit({ name: rowData.senderUnit, type: 'senderUnit' });
+          senderUnit = new organizationUnit({
+            title: rowData.senderUnit,
+            value: rowData.senderUnit_en,
+            type: 'senderUnit',
+          });
           await senderUnit.save();
+          rowData.senderUnit = rowData.senderUnit_en;
         }
         if (tobookNumber) {
           tobookNumber.number = Number(tobookNumber.number) + 1;
@@ -229,7 +235,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, config = {}
           rowData.bookDocumentId = tobookNumber._id;
           rowData.toBookNumber = tobookNumber.number;
         }
-
         const document = await createDocument(rowData, resultFile);
 
         // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
@@ -264,25 +269,18 @@ const extractRowData = (row) => {
   const abstractNote_en = removeVietnameseTones(abstractNote);
   const toBookNumber = row[2] || '';
   const urgencyLevel = row[3] || '';
-  const urgencyLevel_en = removeVietnameseTones(urgencyLevel);
   const senderUnit = row[4] || '';
-  const senderUnit_en = removeVietnameseTones(senderUnit);
   const files = row[5] || '';
-  const bookDocumentId = row[6] || '';
-  const secondBook = row[7] || '';
+  const secondBook = row[6] || '';
   const receiverUnit = 'Công an thành phố Hà Nội 1';
-  const documentType = row[8] || '';
-  const documentType_en = removeVietnameseTones(documentType);
-  const documentField = row[9] || '';
-  const documentField_en = removeVietnameseTones(documentField);
-  const receiveMethod = row[10] || '';
-  const receiveMethod_en = removeVietnameseTones(receiveMethod);
-  const privateLevel = row[11] || '';
-  const privateLevel_en = removeVietnameseTones(privateLevel);
-  const documentDate = row[12] || '';
-  const receiveDate = row[13] || '';
-  const toBookDate = row[14] || '';
-  const deadLine = row[15] || '';
+  const documentType = row[7] || '';
+  const documentField = row[8] || '';
+  const receiveMethod = row[9] || '';
+  const privateLevel = row[10] || '';
+  const documentDate = row[11] || '';
+  const receiveDate = row[12] || '';
+  const toBookDate = row[13] || '';
+  const deadLine = row[14] || '';
 
   return {
     toBook,
@@ -291,21 +289,14 @@ const extractRowData = (row) => {
     abstractNote_en,
     toBookNumber,
     urgencyLevel,
-    urgencyLevel_en,
     senderUnit,
-    senderUnit_en,
     files,
-    bookDocumentId,
     secondBook,
     receiverUnit,
     documentType,
-    documentType_en,
     documentField,
-    documentField_en,
     receiveMethod,
-    receiveMethod_en,
     privateLevel,
-    privateLevel_en,
     documentDate,
     receiveDate,
     toBookDate,
@@ -335,13 +326,49 @@ const validateRequiredFields = async (fields) => {
     }
   }
 
+  const dataCrm = await crm.find();
+  // console.log('dataCrm', dataCrm);
   const validationRules = {
-    receiveMethod: ['cong van giay', 'cong van dien tu'],
-    urgencyLevel: ['thuong', 'khan', 'thuong khan', 'hoa toc'], // do khan
-    privateLevel: ['mat', 'thuong', 'tuyet mat', 'toi mat'],
-    documentType: ['cong van', 'don thu', 'tuong trinh', 'quyet dinh'],
-    documentField: ['van ban quy pham phap luat', 'van ban hanh chinh', 'van ban chuyen nganh'],
+    receiveMethod: [], //27
+    urgencyLevel: [], // do khan
+    privateLevel: [],
+    documentType: [],
+    documentField: [],
   };
+
+  dataCrm.forEach((element) => {
+    switch (element.code) {
+      case 'S27':
+        validationRules.receiveMethod = element.data.map((item) => item.value);
+
+        break;
+      case 'S20':
+        validationRules.urgencyLevel = element.data.map((item) => item.value);
+
+        break;
+      case 'S21':
+        validationRules.privateLevel = element.data.map((item) => item.value);
+
+        break;
+      case 'S19':
+        validationRules.documentType = element.data.map((item) => item.value);
+
+        break;
+      case 'S26':
+        validationRules.documentField = element.data.map((item) => item.value);
+
+        break;
+      default:
+        break;
+    }
+  });
+  // const validationRules = {
+  //   receiveMethod: ['cong van giay', 'cong van dien tu'], //27
+  //   urgencyLevel: ['thuong', 'khan', 'thuong khan', 'hoa toc'], // do khan
+  //   privateLevel: ['mat', 'thuong', 'tuyet mat', 'toi mat'],
+  //   documentType: ['cong van', 'don thu', 'tuong trinh', 'quyet dinh'],
+  //   documentField: ['van ban quy pham phap luat', 'van ban hanh chinh', 'van ban chuyen nganh'],
+  // };
 
   // Kiểm tra các trường bắt buộc
   for (const [field, errorMessage] of Object.entries(requiredFields)) {
@@ -352,7 +379,7 @@ const validateRequiredFields = async (fields) => {
 
   // Kiểm tra các trường theo giá trị hợp lệ
   for (const [field, validValues] of Object.entries(validationRules)) {
-    const value = fields[`${field}_en`] || '';
+    const value = fields[`${field}`] || '';
     if (!validValues.includes(value)) {
       throw new Error(`giá trị ${field} phải là 1 trong những loại cho trước - cột ${getColumnNumber(field)}`);
     }
