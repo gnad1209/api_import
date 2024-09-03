@@ -1,4 +1,4 @@
-const Client = require('./models/client.model');
+const Client = require('../../models/client.model');
 
 class ClientService {
   /**

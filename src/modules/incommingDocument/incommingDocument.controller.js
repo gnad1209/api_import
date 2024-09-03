@@ -5,60 +5,46 @@ const { deleteFolderAndContent } = require('../../config/common');
 const importDataInZipFile = async (req, res, next) => {
   try {
     // khởi tạo biến lưu file zip,path file zip, clientId, folder lưu file sau khi giải nén
-    const zipFile = req.file;
-    const clientId = req.query.clientId;
-
-    const time = new Date() * 1;
-
-    const firstUploadFolder = path.join(__dirname, '..', '..', 'files');
-    const compressedFilePath = path.join(firstUploadFolder, zipFile.filename);
-    const folderToSave = path.join(__dirname, '..', '..', 'uploads', `${clientId}`, `import_${time}`);
-    const folderToSaveaAtachment = path.join(
-      __dirname,
-      '..',
-      '..',
-      'uploads',
-      `${clientId}`,
-      `import_${time}`,
-      `attachments`,
-    );
+    const { file: zipFile } = req;
+    const { clientId } = req.query;
 
     // kiểm tra file được tải lên chưa
-    if (!zipFile) {
-      return res.status(400).json({ status: 0, message: 'Tải file lên thất bại' });
-    }
+    if (!zipFile) return res.status(400).json({ status: 0, message: 'Tải file lên thất bại' });
+
+    const time = Date.now();
+    const baseDir = path.join(__dirname, '..', '..');
+    const firstUploadFolder = path.join(baseDir, 'files');
+    const compressedFilePath = path.join(firstUploadFolder, zipFile.filename);
+    const folderToSave = path.join(baseDir, 'uploads', clientId, `import_${time}`);
+    const folderToSaveAttachment = path.join(folderToSave, 'attachments');
 
     //giải nén file zip đầu vào
-    const extractFileZip = await service.unzipFile(compressedFilePath, folderToSave);
-    if (!extractFileZip) {
+    if (!(await service.unzipFile(compressedFilePath, folderToSave))) {
       return res.status(400).json({ status: 0, message: 'Giải nén không thành công' });
     }
 
     // lấy path của file excel và path của file zip đính kèm còn lại
     const objPath = await service.getPathOfChildFileZip(folderToSave);
-
-    if (!objPath) {
-      return res.status(400).json({ status: 0, message: 'Không tìm được file sau khi giải nén' });
-    }
+    if (!objPath) return res.status(400).json({ status: 0, message: 'Không tìm được file sau khi giải nén' });
 
     // Kiểm tra dung lượng còn lại của client
-    if (clientId) {
-      const checkStorage = await service.checkStorage(objPath, clientId, folderToSave);
-      if (!checkStorage) {
-        return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
-      }
-    }
+    // if (clientId) {
+    //   const checkStorage = await service.checkStorage(objPath, clientId, folderToSave);
+    //   if (!checkStorage) {
+    //     return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
+    //   }
+    // }
 
     //giải nén file đính kèm
     let extractFileAttachment = null;
     if (objPath.zipFile) {
-      extractFileAttachment = await service.unzipFile(objPath.zipFile, folderToSaveaAtachment);
+      extractFileAttachment = await service.unzipFile(objPath.zipFile, folderToSaveAttachment);
     }
 
     let dataFromAttachment = [];
     if (extractFileAttachment) {
       // lấy thông tin các file con trong file zip đính kèm(zipAttachmentFile) từ path vừa tìm đc
-      dataFromAttachment = await service.getDataFromAttachment(folderToSaveaAtachment);
+      dataFromAttachment = await service.getDataFromAttachment(folderToSaveAttachment);
       if (!dataFromAttachment) {
         return res.status(400).json({ status: 0, message: 'Lấy dữ liệu tệp đính kèm thất bại' });
       }
@@ -69,9 +55,10 @@ const importDataInZipFile = async (req, res, next) => {
     if (!dataExcel) {
       return res.status(400).json({ status: 0, message: 'Lấy dữ liệu từ file excel thất bại' });
     }
+
     // dữ liệu mẫu
-    const username = 'username';
-    const createdBy = 'userCreated';
+    const username = 'admin';
+    const createdBy = 'admin';
     const code = 'IncommingDocument';
     //xử lý dữ liệu lưu các bản ghi vào db
     const data = await service.processData(
@@ -85,11 +72,11 @@ const importDataInZipFile = async (req, res, next) => {
     );
     if (data.saveDocument.length < 1) {
       await deleteFolderAndContent(folderToSave);
-      return res.status(400).json({ status: 0, message: 'Import bản ghi thất bại' });
+      return res.status(400).json(data);
     }
     const document = service.selectFieldsDocument(data.saveDocument);
-    const files = service.selectFieldsFile(data.savedFiles);
-    return res.status(200).json({ status: 1, data: { document, files: files } });
+    // const files = service.selectFieldsFile(data.savedFiles);
+    return res.status(200).json({ checkWarning: data.errors, data: document });
   } catch (e) {
     return res.status(400).json(e);
   }
