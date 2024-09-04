@@ -260,18 +260,15 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       );
       allResultFiles.push(...resultFile);
 
-      let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
-      let senderUnit = await organizationUnit.findOne({ value: rowData.senderUnit, type: 'senderUnit' });
-
-      if (!senderUnit) {
-        senderUnit = new organizationUnit({
-          title: rowData.senderUnit,
-          value: rowData.senderUnit_en,
-          type: 'senderUnit',
-        });
-        await senderUnit.save();
-        rowData.senderUnit = rowData.senderUnit_en;
-      }
+      let tobookNumber = await Document.findOne({
+        name: rowData.toBookNumber,
+        senderUnit: rowData.senderUnit,
+        // receiverUnit: employee.organizationUnit.organizationUnitId,
+        documentDate: {
+          $gte: moment(data.documentDate, 'YYYY-MM-DD').startOf('day').toDate(),
+          $lte: moment(data.documentDate, 'YYYY-MM-DD').endOf('day').toDate(),
+        },
+      });
 
       if (tobookNumber) {
         tobookNumber.number = Number(tobookNumber.number) + 1;
@@ -313,13 +310,10 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
  */
 const extractRowData = (row) => {
   const toBook = row[0];
-  const toBook_en = removeVietnameseTones(toBook);
   const abstractNote = row[1] || '';
-  const abstractNote_en = removeVietnameseTones(abstractNote);
   const toBookNumber = row[2] || '';
   const urgencyLevel = row[3] || '';
   const senderUnit = row[4] || '';
-  const senderUnit_en = removeVietnameseTones(senderUnit);
   const files = row[5] || '';
   const secondBook = row[6] || '';
   const documentType = row[7] || '';
@@ -333,13 +327,10 @@ const extractRowData = (row) => {
 
   return {
     toBook,
-    toBook_en,
     abstractNote,
-    abstractNote_en,
     toBookNumber,
     urgencyLevel,
     senderUnit,
-    senderUnit_en,
     files,
     secondBook,
     documentType,
