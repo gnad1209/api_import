@@ -30,6 +30,7 @@ const unzipFile = async (filePath, folderPath) => {
   try {
     //Kiểm tra Path có tồn tại không
     const [checkSaveFolder, checkZipFilePath] = await Promise.all([existsPath(folderPath), existsPath(filePath)]);
+
     if (!checkSaveFolder) {
       await fsPromises.mkdir(folderPath);
     }

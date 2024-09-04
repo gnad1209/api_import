@@ -1,6 +1,6 @@
 const service = require('./importIncommingDocument.service');
 const path = require('path');
-const { deleteFolderAndContent } = require('../../config/common');
+const { deleteFolderAndContent, existsPath } = require('../../config/common');
 const fsPromises = require('fs').promises;
 
 const importDataInZipFile = async (req, res, next) => {
@@ -14,6 +14,8 @@ const importDataInZipFile = async (req, res, next) => {
 
     const time = Date.now();
     const baseDir = path.join(__dirname, '..', '..');
+    console.log(baseDir);
+
     const firstUploadFolder = path.join(baseDir, 'modules', 'importIncommingDocument', 'files');
     const compressedFilePath = path.join(firstUploadFolder, zipFile.filename);
     const folderToSave = path.join(
@@ -25,18 +27,20 @@ const importDataInZipFile = async (req, res, next) => {
       `import_${time}`,
     );
     const folderToSaveAttachment = path.join(folderToSave, 'attachments');
+
+    const [checkFirstUploadFolder, checkFolderToSave] = await Promise.all([
+      existsPath(firstUploadFolder),
+      existsPath(folderToSave),
+    ]);
     //đường dẫn chứa file upload đầu tiên
-    if (!firstUploadFolder) {
+    if (!checkFirstUploadFolder) {
       await fsPromises.mkdir(firstUploadFolder);
     }
-    //đường dẫn folder các folder của client
-    if (!compressedFilePath) {
-      await fsPromises.mkdir(compressedFilePath);
-    }
     //đường dẫn folder chứa file sau khi giải nén
-    if (!folderToSave) {
+    if (!checkFolderToSave) {
       await fsPromises.mkdir(folderToSave);
     }
+
     //giải nén file zip đầu vào
     if (!(await service.unzipFile(compressedFilePath, folderToSave))) {
       return res.status(400).json({ status: 0, message: 'Giải nén không thành công' });
