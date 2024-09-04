@@ -239,7 +239,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       });
       if (documentIncomming) {
         errorDocuments = errorDocuments.push({ status: 400, message: `Đã tồn tại văn bản số ${i}` });
-        allErrors.push(...errorDocument);
+        allErrors.push(...errorsDocument);
         continue;
       }
       const arrFiles = rowData.files
