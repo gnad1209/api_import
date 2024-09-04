@@ -26,7 +26,7 @@ const {
  * @param {Object} filePath path của file cần giải nén
  * @param {Object} foderPath Path của folder mong muốn lưu file
  */
-const unzipFile = async (filePath, folderPath) => {
+const unzipFile = async (folderPath, filePath) => {
   try {
     //Kiểm tra Path có tồn tại không
     const [checkSaveFolder, checkZipFilePath] = await Promise.all([existsPath(folderPath), existsPath(filePath)]);
@@ -192,6 +192,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     if (!Array.isArray(dataAttachments)) {
       return { status: 400, message: 'dataAttachments không phải là một mảng' };
     }
+    console.log(dataAttachments);
     if (!folderToSave) {
       return { status: 400, message: 'Không tồn tại đường dẫn chứa các file import' };
     }
@@ -206,6 +207,8 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       const row = dataExcel[i];
       if (row.length === 0) continue;
       const rowData = extractRowData(row);
+      console.log(rowData);
+
       rowData.kanbanStatus = 'receive';
       rowData.receiverUnit = employee.departmentName;
       rowData.createdBy = createdBy;
@@ -230,13 +233,14 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         toBook: rowData.toBook,
         receiverUnit: employee.departmentName,
         senderUnit: rowData.senderUnit,
-        documentDate: {
-          $gte: moment(data.documentDate, 'YYYY-MM-DD').startOf('day').toDate(),
-          $lte: moment(data.documentDate, 'YYYY-MM-DD').endOf('day').toDate(),
-        },
+        // documentDate: {
+        //   $gte: moment(rowData.documentDate, 'YYYY-MM-DD').startOf('day').toDate(),
+        //   $lte: moment(rowData.documentDate, 'YYYY-MM-DD').endOf('day').toDate(),
+        // },
       });
+
       if (documentIncomming) {
-        errorDocuments = errorDocuments.push({ status: 400, message: `Đã tồn tại văn bản số ${i}` });
+        errorDocuments.push({ status: 400, message: `Đã tồn tại văn bản số ${i + 1}` });
         allErrors.push(...errorDocuments);
         continue;
       }
