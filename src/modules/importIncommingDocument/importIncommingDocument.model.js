@@ -1,4 +1,4 @@
-const conn = require('../../config/appConn');
+const conn = require('../config/appConn');
 const mongoose = require('mongoose');
 const moment = require('moment');
 

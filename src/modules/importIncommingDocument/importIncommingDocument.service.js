@@ -2,12 +2,12 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const importIncommingDocument = require('./importIncommingDocument.model');
-const Document = require('../../models/document.model');
-const crm = require('../../models/crmSource.model');
-const Employee = require('../../models/employee.model');
-const organizationUnit = require('../../models/organizationUnit.model');
-const fileManager = require('../../models/fileManager.model');
-const Client = require('../../models/client.model');
+const Document = require('../models/document.model');
+const crm = require('../models/crmSource.model');
+const Employee = require('../models/employee.model');
+const organizationUnit = require('../models/organizationUnit.model');
+const fileManager = require('../models/fileManager.model');
+const Client = require('../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
@@ -20,7 +20,7 @@ const {
   checkForSingleZipAndExcel,
   deleteFolderAndContent,
   hasFileNameInArray,
-} = require('../../config/common');
+} = require('../config/common');
 /**
  * Nhận thông tin file nén, giải nén file và lưu vào folder mong muốn
  * @param {Object} filePath path của file cần giải nén
