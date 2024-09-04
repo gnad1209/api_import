@@ -34,7 +34,7 @@ const unzipFile = async (filePath, folderPath) => {
       await fsPromises.mkdir(folderPath);
     }
     if (!checkZipFilePath) {
-      throw new Error('Không tìm thấy file cần giải nén!');
+      return { status: 400, message: 'Không tìm thấy file cần giải nén!' };
     }
     // Hàm giải nén file
     await fs
@@ -59,15 +59,13 @@ const getPathOfChildFileZip = async (folderPath) => {
     // Kiểm tra folderPath có tồn tại không
     const checkSaveFolder = await existsPath(folderPath);
     if (!checkSaveFolder) {
-      throw new Error('Không tìm thấy folder vừa giải nén');
+      return { status: 400, message: 'Không tìm thấy folder vừa giải nén' };
     }
     // kiểm tra thành phần có trong folder chứa các tệp giống định dạng đầu vào ko
     const check = await checkForSingleZipAndExcel(folderPath);
     if (!check) {
       return false;
-      // throw new Error('Cấu trúc folder sau khi giải nén không đúng định dạng');
     }
-
     return check;
   } catch (e) {
     return e;
@@ -85,7 +83,7 @@ const checkStorage = async (objPath, clientId, folderToSave) => {
   try {
     // Kiểm tra folderPath có tồn tại không
     if (!objPath.excelFile) {
-      throw new Error('Không tìm thấy file excel');
+      return { status: 400, message: 'Không tìm thấy file excel' };
     }
     const stats2 = fs.statSync(objPath.excelFile);
     let totalSize = stats2.size;
@@ -104,14 +102,13 @@ const checkStorage = async (objPath, clientId, folderToSave) => {
             //xóa đường dẫn lưu file giải nén
             await deleteFolderAndContent(folderToSave);
             return false;
-            // throw new Error('Dung lượng còn lại ko đủ');
           } else {
             client.usedStorage += totalSize;
           }
         }
         await client.save();
       } else {
-        throw new Error('ClientId không tồn tại');
+        return { status: 400, message: 'ClientId không tồn tại' };
       }
     }
 
@@ -131,7 +128,7 @@ const getDataFromAttachment = async (pathAttachmentsPath) => {
     // kiểm tra path tồn tại không
     const checkPathAttachments = await existsPath(pathAttachmentsPath);
     if (!checkPathAttachments) {
-      throw new Error('Không tìm thấy file cần lấy thông tin');
+      return { status: 400, message: 'Không tìm thấy file cần lấy thông tin' };
     }
     // lấy dữ liệu của file đính kèm
     const files = await fsPromises.readdir(pathAttachmentsPath);
@@ -186,16 +183,16 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     const employee = await Employee.findOne({ username });
 
     if (!employee.departmentName) {
-      throw new Error('Lỗi ko tìm thấy phòng ban');
+      return { status: 400, message: 'Lỗi ko tìm thấy phòng ban' };
     }
     if (!Array.isArray(dataExcel)) {
-      throw new Error('dataExcel không phải là một mảng');
+      return { status: 400, message: 'dataExcel không phải là một mảng' };
     }
     if (!Array.isArray(dataAttachments)) {
-      throw new Error('dataAttachments không phải là một mảng');
+      return { status: 400, message: 'dataAttachments không phải là một mảng' };
     }
     if (!folderToSave) {
-      throw new Error('Không tồn tại đường dẫn chứa các file import');
+      return { status: 400, message: 'Không tồn tại đường dẫn chứa các file import' };
     }
 
     const resultDocs = [];
@@ -239,7 +236,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       });
       if (documentIncomming) {
         errorDocuments = errorDocuments.push({ status: 400, message: `Đã tồn tại văn bản số ${i}` });
-        allErrors.push(...errorDocument);
+        allErrors.push(...errorsDocument);
         continue;
       }
       const arrFiles = rowData.files
@@ -284,7 +281,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         if (!file.mid) {
           file.mid = document._id;
         } else {
-          throw new Error(`file đính kèm ${file.name} của vản bản có id ${file.mid}`);
+          return { status: 400, message: `file đính kèm ${file.name} của vản bản có id ${file.mid}` };
         }
         await file.save();
       }
