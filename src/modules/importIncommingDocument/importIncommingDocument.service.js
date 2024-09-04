@@ -192,7 +192,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     if (!Array.isArray(dataAttachments)) {
       return { status: 400, message: 'dataAttachments không phải là một mảng' };
     }
-    console.log(dataAttachments);
     if (!folderToSave) {
       return { status: 400, message: 'Không tồn tại đường dẫn chứa các file import' };
     }
@@ -207,8 +206,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       const row = dataExcel[i];
       if (row.length === 0) continue;
       const rowData = extractRowData(row);
-      console.log(rowData);
-
       rowData.kanbanStatus = 'receive';
       rowData.receiverUnit = employee.departmentName;
       rowData.createdBy = createdBy;
@@ -233,15 +230,17 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         toBook: rowData.toBook,
         receiverUnit: employee.departmentName,
         senderUnit: rowData.senderUnit,
-        // documentDate: {
-        //   $gte: moment(rowData.documentDate, 'YYYY-MM-DD').startOf('day').toDate(),
-        //   $lte: moment(rowData.documentDate, 'YYYY-MM-DD').endOf('day').toDate(),
-        // },
+        documentDate: {
+          $gte: moment(rowData.documentDate, 'DD/MM/YYYY').startOf('day').toDate(),
+          $lte: moment(rowData.documentDate, 'DD/MM/YYYY').endOf('day').toDate(),
+        },
       });
 
       if (documentIncomming) {
-        errorDocuments.push({ status: 400, message: `Đã tồn tại văn bản số ${i + 1}` });
-        allErrors.push(...errorDocuments);
+        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+        if (!allErrors.some((error) => error.message === errorMessage)) {
+          errorDocuments.push({ status: 400, message: errorMessage });
+        }
         continue;
       }
       const arrFiles = rowData.files
@@ -292,6 +291,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       }
       resultDocs.push(document);
     }
+    allErrors.push(...errorDocuments);
     // Lưu tất cả các bản ghi mới từ file excel
     const savedDocument = await importIncommingDocument.insertMany(resultDocs);
     // Trả về những bản ghi mới từ file excel và file đính kèm
