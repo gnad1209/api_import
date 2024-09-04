@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
-const incommingDocument = require('./incommingDocument.model');
+const importIncommingDocument = require('./importIncommingDocument.model');
 const Document = require('../../models/document.model');
 const crm = require('../../models/crmSource.model');
 const Employee = require('../../models/employee.model');
@@ -225,7 +225,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       }
 
       // Xử lý đính kèm
-      let documentIncomming = await incommingDocument.findOne({
+      let documentIncomming = await importIncommingDocument.findOne({
         toBook: rowData.toBook,
         receiverUnit: employee.departmentName,
         senderUnit: rowData.senderUnit,
@@ -236,7 +236,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       });
       if (documentIncomming) {
         errorDocuments = errorDocuments.push({ status: 400, message: `Đã tồn tại văn bản số ${i}` });
-        allErrors.push(...errorsDocument);
+        allErrors.push(...errorDocuments);
         continue;
       }
       const arrFiles = rowData.files
@@ -288,7 +288,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       resultDocs.push(document);
     }
     // Lưu tất cả các bản ghi mới từ file excel
-    const savedDocument = await incommingDocument.insertMany(resultDocs);
+    const savedDocument = await importIncommingDocument.insertMany(resultDocs);
     // Trả về những bản ghi mới từ file excel và file đính kèm
     const logErrors = allErrors.length > 0 ? allErrors : null;
 
@@ -560,7 +560,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
  * @returns {Object} Đối tượng document mới.
  */
 const createDocument = (rowData, resultFile) => {
-  const document = new incommingDocument({
+  const document = new importIncommingDocument({
     ...rowData,
     files: resultFile.length >= 1 ? resultFile.map((item) => item._id) : null,
   });

@@ -1,4 +1,4 @@
-const service = require('./incommingDocument.service');
+const service = require('./importIncommingDocument.service');
 const path = require('path');
 const { deleteFolderAndContent } = require('../../config/common');
 
@@ -59,7 +59,7 @@ const importDataInZipFile = async (req, res, next) => {
     // dữ liệu mẫu
     const username = 'admin';
     const createdBy = 'admin';
-    const code = 'IncommingDocument';
+    const code = 'importIncommingDocument';
     //xử lý dữ liệu lưu các bản ghi vào db
     const data = await service.processData(
       dataExcel,

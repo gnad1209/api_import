@@ -12,7 +12,7 @@ const bookSchema = new mongoose.Schema({
   documentField: { type: String, default: 'vn-bn-quy-phm-php-lut' }, // Lĩnh vực
   privateLevel: { type: String, default: 'mt' }, // Độ mật
   currentNote: { type: String }, // Nội dung xử lý
-  incommingDocument: { type: String }, // Phúc đáp văn bản
+  importIncommingDocument: { type: String }, // Phúc đáp văn bản
   tasks: { type: String }, // Công việc liên quan
   autoReleaseCheck: { type: Boolean, default: false }, // Tự động ban hành
   caSignCheck: { type: Boolean, default: false }, // Ký CA

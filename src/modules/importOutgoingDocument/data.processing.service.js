@@ -69,7 +69,7 @@ class DataProcessingService {
           documentField: row.column7 || '',
           privateLevel: row.column8 || '',
           currentNote: row.column9 || '',
-          incommingDocument: row.column10 || '',
+          importIncommingDocument: row.column10 || '',
           tasks: row.column11 || '',
           autoReleaseCheck: row.column12 || false,
           caSignCheck: row.column13 || false,

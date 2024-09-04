@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-const incommingDocumentRoute = require('../modules/incommingDocument/incommingDocument.route');
-const outgoingDocumentRoute = require('../modules/outgoingDocument/outgoingDocument.route');
+const importIncommingDocumentRoute = require('../modules/importIncommingDocument/importIncommingDocument.route');
+const importOutgoingDocumentRoute = require('../modules/importOutgoingDocument/importOutgoingDocument.route');
 
-router.use('/incommingDocument', incommingDocumentRoute);
-router.use('/outgoingDocument', outgoingDocumentRoute);
+router.use('/importIncommingDocument', importIncommingDocumentRoute);
+router.use('/importOutgoingDocument', importOutgoingDocumentRoute);
 
 module.exports = router;

@@ -56,14 +56,8 @@ const upload = multer({
   },
 });
 
-const ctl = require('./outgoingDocument.controller');
+const ctl = require('./importOutgoingDocument.controller');
 
-router.post(
-  '/',
-  upload.fields([
-    { name: 'zipFile', maxCount: 1 },
-  ]),
-  ctl.importOutgoingDocument,
-);
+router.post('/', upload.fields([{ name: 'zipFile', maxCount: 1 }]), ctl.importimportOutgoingDocument);
 
 module.exports = router;

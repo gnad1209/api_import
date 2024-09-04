@@ -4,7 +4,7 @@ const ExcelService = require('./excel.service');
 const UnZipService = require('./unzip.service');
 const DataProcessingService = require('./data.processing.service');
 
-const importOutgoingDocument = async (req, res, next) => {
+const importimportOutgoingDocument = async (req, res, next) => {
   try {
     // kiểm tra file có hợp lệ ko ?
     let { zipFile } = req.files;
@@ -100,5 +100,5 @@ const importOutgoingDocument = async (req, res, next) => {
 };
 
 module.exports = {
-  importOutgoingDocument,
+  importimportOutgoingDocument,
 };
