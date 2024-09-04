@@ -231,9 +231,15 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         toBook: rowData.toBook,
         receiverUnit: employee.departmentName,
         senderUnit: rowData.senderUnit,
+        documentDate: {
+          $gte: moment(data.documentDate, 'YYYY-MM-DD').startOf('day').toDate(),
+          $lte: moment(data.documentDate, 'YYYY-MM-DD').endOf('day').toDate(),
+        },
       });
-      // if (!documentIncomming) {
-
+      if (documentIncomming) {
+        const errorDocument = { status: 400, message: `Đã tồn tại văn bản số ${i}` };
+        allErrors.push(...errorDocument);
+      }
       const arrFiles = rowData.files
         .trim()
         .split(',')
@@ -260,15 +266,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       );
       allResultFiles.push(...resultFile);
 
-      let tobookNumber = await Document.findOne({
-        name: rowData.toBookNumber,
-        senderUnit: rowData.senderUnit,
-        // receiverUnit: employee.organizationUnit.organizationUnitId,
-        documentDate: {
-          $gte: moment(data.documentDate, 'YYYY-MM-DD').startOf('day').toDate(),
-          $lte: moment(data.documentDate, 'YYYY-MM-DD').endOf('day').toDate(),
-        },
-      });
+      let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
 
       if (tobookNumber) {
         tobookNumber.number = Number(tobookNumber.number) + 1;
@@ -288,9 +286,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         }
         await file.save();
       }
-
       resultDocs.push(document);
-      // }
     }
     // Lưu tất cả các bản ghi mới từ file excel
     const savedDocument = await incommingDocument.insertMany(resultDocs);
