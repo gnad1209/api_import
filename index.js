@@ -28,7 +28,7 @@ app.listen(port, () => {
 // documentField        :Lĩnh vực                               : vn-bn-quy-phm-php-lut
 // privateLevel         :Độ mật                                 : mt
 // currentNote          :Nội dung xử lý                         : Nội dung xử lý
-// incommingDocument    :Phúc đáp văn bản (Nhập mã Văn bản đến) : c2
+// importIncommingDocument    :Phúc đáp văn bản (Nhập mã Văn bản đến) : c2
 // tasks                :Công việc liên quan                    : Nhập mã Hồ sơ công việc
 // autoReleaseCheck     :Tự động ban hành                       : true
 // caSignCheck          :Ký CA                                  : true
