@@ -1,13 +1,13 @@
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
-const incommingDocument = require('./incommingDocument.model');
-const Document = require('../../models/document.model');
-const crm = require('../../models/crmSource.model');
-const Employee = require('../../models/employee.model');
-const organizationUnit = require('../../models/organizationUnit.model');
-const fileManager = require('../../models/fileManager.model');
-const Client = require('../../models/client.model');
+const importIncommingDocument = require('./importIncommingDocument.model');
+const Document = require('../models/document.model');
+const crm = require('../models/crmSource.model');
+const Employee = require('../models/employee.model');
+const organizationUnit = require('../models/organizationUnit.model');
+const fileManager = require('../models/fileManager.model');
+const Client = require('../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
@@ -20,21 +20,22 @@ const {
   checkForSingleZipAndExcel,
   deleteFolderAndContent,
   hasFileNameInArray,
-} = require('../../config/common');
+} = require('../config/common');
 /**
  * Nhận thông tin file nén, giải nén file và lưu vào folder mong muốn
  * @param {Object} filePath path của file cần giải nén
  * @param {Object} foderPath Path của folder mong muốn lưu file
  */
-const unzipFile = async (filePath, folderPath) => {
+const unzipFile = async (folderPath, filePath) => {
   try {
     //Kiểm tra Path có tồn tại không
     const [checkSaveFolder, checkZipFilePath] = await Promise.all([existsPath(folderPath), existsPath(filePath)]);
+
     if (!checkSaveFolder) {
       await fsPromises.mkdir(folderPath);
     }
     if (!checkZipFilePath) {
-      throw new Error('Không tìm thấy file cần giải nén!');
+      return { status: 400, message: 'Không tìm thấy file cần giải nén!' };
     }
     // Hàm giải nén file
     await fs
@@ -59,15 +60,13 @@ const getPathOfChildFileZip = async (folderPath) => {
     // Kiểm tra folderPath có tồn tại không
     const checkSaveFolder = await existsPath(folderPath);
     if (!checkSaveFolder) {
-      throw new Error('Không tìm thấy folder vừa giải nén');
+      return { status: 400, message: 'Không tìm thấy folder vừa giải nén' };
     }
     // kiểm tra thành phần có trong folder chứa các tệp giống định dạng đầu vào ko
     const check = await checkForSingleZipAndExcel(folderPath);
     if (!check) {
       return false;
-      // throw new Error('Cấu trúc folder sau khi giải nén không đúng định dạng');
     }
-
     return check;
   } catch (e) {
     return e;
@@ -85,7 +84,7 @@ const checkStorage = async (objPath, clientId, folderToSave) => {
   try {
     // Kiểm tra folderPath có tồn tại không
     if (!objPath.excelFile) {
-      throw new Error('Không tìm thấy file excel');
+      return { status: 400, message: 'Không tìm thấy file excel' };
     }
     const stats2 = fs.statSync(objPath.excelFile);
     let totalSize = stats2.size;
@@ -104,14 +103,13 @@ const checkStorage = async (objPath, clientId, folderToSave) => {
             //xóa đường dẫn lưu file giải nén
             await deleteFolderAndContent(folderToSave);
             return false;
-            // throw new Error('Dung lượng còn lại ko đủ');
           } else {
             client.usedStorage += totalSize;
           }
         }
         await client.save();
       } else {
-        throw new Error('ClientId không tồn tại');
+        return { status: 400, message: 'ClientId không tồn tại' };
       }
     }
 
@@ -131,7 +129,7 @@ const getDataFromAttachment = async (pathAttachmentsPath) => {
     // kiểm tra path tồn tại không
     const checkPathAttachments = await existsPath(pathAttachmentsPath);
     if (!checkPathAttachments) {
-      throw new Error('Không tìm thấy file cần lấy thông tin');
+      return { status: 400, message: 'Không tìm thấy file cần lấy thông tin' };
     }
     // lấy dữ liệu của file đính kèm
     const files = await fsPromises.readdir(pathAttachmentsPath);
@@ -186,22 +184,23 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     const employee = await Employee.findOne({ username });
 
     if (!employee.departmentName) {
-      throw new Error('Lỗi ko tìm thấy phòng ban');
+      return { status: 400, message: 'Lỗi ko tìm thấy phòng ban' };
     }
     if (!Array.isArray(dataExcel)) {
-      throw new Error('dataExcel không phải là một mảng');
+      return { status: 400, message: 'dataExcel không phải là một mảng' };
     }
     if (!Array.isArray(dataAttachments)) {
-      throw new Error('dataAttachments không phải là một mảng');
+      return { status: 400, message: 'dataAttachments không phải là một mảng' };
     }
     if (!folderToSave) {
-      throw new Error('Không tồn tại đường dẫn chứa các file import');
+      return { status: 400, message: 'Không tồn tại đường dẫn chứa các file import' };
     }
 
     const resultDocs = [];
     const allResultFiles = [];
     const allErrors = []; // Mảng chứa tất cả các lỗi
     const errorsFile = [];
+    const errorDocuments = [];
     // Lặp lấy dữ liệu của file excel
     for (let i = 0; i < dataExcel.length; i++) {
       const row = dataExcel[i];
@@ -227,13 +226,23 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       }
 
       // Xử lý đính kèm
-      let documentIncomming = await incommingDocument.findOne({
+      let documentIncomming = await importIncommingDocument.findOne({
         toBook: rowData.toBook,
         receiverUnit: employee.departmentName,
         senderUnit: rowData.senderUnit,
+        documentDate: {
+          $gte: moment(rowData.documentDate, 'DD/MM/YYYY').startOf('day').toDate(),
+          $lte: moment(rowData.documentDate, 'DD/MM/YYYY').endOf('day').toDate(),
+        },
       });
-      // if (!documentIncomming) {
 
+      if (documentIncomming) {
+        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+        if (!allErrors.some((error) => error.message === errorMessage)) {
+          errorDocuments.push({ status: 400, message: errorMessage });
+        }
+        continue;
+      }
       const arrFiles = rowData.files
         .trim()
         .split(',')
@@ -260,15 +269,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       );
       allResultFiles.push(...resultFile);
 
-      let tobookNumber = await Document.findOne({
-        name: rowData.toBookNumber,
-        senderUnit: rowData.senderUnit,
-        // receiverUnit: employee.organizationUnit.organizationUnitId,
-        documentDate: {
-          $gte: moment(data.documentDate, 'YYYY-MM-DD').startOf('day').toDate(),
-          $lte: moment(data.documentDate, 'YYYY-MM-DD').endOf('day').toDate(),
-        },
-      });
+      let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
 
       if (tobookNumber) {
         tobookNumber.number = Number(tobookNumber.number) + 1;
@@ -284,16 +285,15 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         if (!file.mid) {
           file.mid = document._id;
         } else {
-          throw new Error(`file đính kèm ${file.name} của vản bản có id ${file.mid}`);
+          return { status: 400, message: `file đính kèm ${file.name} của vản bản có id ${file.mid}` };
         }
         await file.save();
       }
-
       resultDocs.push(document);
-      // }
     }
+    allErrors.push(...errorDocuments);
     // Lưu tất cả các bản ghi mới từ file excel
-    const savedDocument = await incommingDocument.insertMany(resultDocs);
+    const savedDocument = await importIncommingDocument.insertMany(resultDocs);
     // Trả về những bản ghi mới từ file excel và file đính kèm
     const logErrors = allErrors.length > 0 ? allErrors : null;
 
@@ -565,7 +565,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
  * @returns {Object} Đối tượng document mới.
  */
 const createDocument = (rowData, resultFile) => {
-  const document = new incommingDocument({
+  const document = new importIncommingDocument({
     ...rowData,
     files: resultFile.length >= 1 ? resultFile.map((item) => item._id) : null,
   });

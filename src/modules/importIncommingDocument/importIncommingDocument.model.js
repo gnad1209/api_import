@@ -1,8 +1,8 @@
-const conn = require('../../config/appConn');
+const conn = require('../config/appConn');
 const mongoose = require('mongoose');
 const moment = require('moment');
 
-const incommingDocumentSchema = new mongoose.Schema(
+const importIncommingDocumentSchema = new mongoose.Schema(
   {
     toBook: { type: String },
     toBook_en: { type: String },
@@ -44,9 +44,9 @@ const incommingDocumentSchema = new mongoose.Schema(
     deadLine: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
   },
   {
-    collection: 'incommingDocument',
+    collection: 'importIncommingDocument',
     timestamps: true,
   },
 );
 
-module.exports = conn.model('incommingDocument', incommingDocumentSchema);
+module.exports = conn.model('importIncommingDocument', importIncommingDocumentSchema);

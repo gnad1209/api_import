@@ -1,6 +1,6 @@
-const service = require('./incommingDocument.service');
+const service = require('./importIncommingDocument.service');
 const path = require('path');
-const { deleteFolderAndContent } = require('../../config/common');
+const { deleteFolderAndContent } = require('../config/common');
 
 const importDataInZipFile = async (req, res, next) => {
   try {
@@ -13,13 +13,20 @@ const importDataInZipFile = async (req, res, next) => {
 
     const time = Date.now();
     const baseDir = path.join(__dirname, '..', '..');
-    const firstUploadFolder = path.join(baseDir, 'files');
+    const firstUploadFolder = path.join(baseDir, 'modules', 'importIncommingDocument', 'files');
     const compressedFilePath = path.join(firstUploadFolder, zipFile.filename);
-    const folderToSave = path.join(baseDir, 'uploads', clientId, `import_${time}`);
+    const folderToSave = path.join(
+      baseDir,
+      'modules',
+      'importIncommingDocument',
+      'uploads',
+      clientId,
+      `import_${time}`,
+    );
     const folderToSaveAttachment = path.join(folderToSave, 'attachments');
 
     //giải nén file zip đầu vào
-    if (!(await service.unzipFile(compressedFilePath, folderToSave))) {
+    if (!(await service.unzipFile(folderToSave, compressedFilePath))) {
       return res.status(400).json({ status: 0, message: 'Giải nén không thành công' });
     }
 
@@ -38,7 +45,7 @@ const importDataInZipFile = async (req, res, next) => {
     //giải nén file đính kèm
     let extractFileAttachment = null;
     if (objPath.zipFile) {
-      extractFileAttachment = await service.unzipFile(objPath.zipFile, folderToSaveAttachment);
+      extractFileAttachment = await service.unzipFile(folderToSaveAttachment, objPath.zipFile);
     }
 
     let dataFromAttachment = [];
@@ -59,7 +66,7 @@ const importDataInZipFile = async (req, res, next) => {
     // dữ liệu mẫu
     const username = 'admin';
     const createdBy = 'admin';
-    const code = 'IncommingDocument';
+    const code = 'importIncommingDocument';
     //xử lý dữ liệu lưu các bản ghi vào db
     const data = await service.processData(
       dataExcel,

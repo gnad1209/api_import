@@ -66,8 +66,8 @@ const crmSource = [
         _id: '61e920c6d1e1e81e51719ea1',
         title: 'Baocao',
         value: 'Baocao',
-      }
-    ]
+      },
+    ],
   },
   {
     title: 'Độ khẩn',
@@ -79,25 +79,25 @@ const crmSource = [
         _id: '617a12543710ef23fa2c286a',
         title: 'Thường',
         value: 'Dthng',
-        index: 4
+        index: 4,
       },
       {
         _id: '6170e8c992733754a18dce2a',
         title: 'Khẩn',
         value: 'Ckhn',
-        index: 3
+        index: 3,
       },
       {
         _id: '6170e8c992733754a18dce2b',
         title: 'Thượng khẩn',
         value: 'Bthng-khn',
-        index: 2
+        index: 2,
       },
       {
         _id: '6170e8c992733754a18dce2c',
         title: 'Hỏa tốc',
         value: 'Aha-tc',
-        index: 1
+        index: 1,
       },
     ],
   },
@@ -110,24 +110,24 @@ const crmSource = [
       {
         _id: '6170eaceff4a36548ff2bb32',
         title: 'Mật',
-        value: 'mt'
+        value: 'mt',
       },
       {
         _id: '617a1244ccd4ad24164bdcc4',
         title: 'Thường',
-        value: 'thng'
+        value: 'thng',
       },
       {
         _id: '6170eaceff4a36548ff2bb34',
         title: 'Tuyệt mật',
-        value: 'tuyt-mt'
+        value: 'tuyt-mt',
       },
       {
         _id: '6170eaceff4a36548ff2bb33',
         title: 'Tối mật',
-        value: 'ti-mt'
+        value: 'ti-mt',
       },
-    ]
+    ],
   },
   // {
   //   title: 'Nơi lưu trữ công văn',
@@ -150,17 +150,17 @@ const crmSource = [
       {
         _id: '6170e7f1ff4a36548ff2bac8',
         title: 'Văn bản quy phạm pháp luật',
-        value: 'vn-bn-quy-phm-php-lut'
+        value: 'vn-bn-quy-phm-php-lut',
       },
       {
         _id: '6170e7f1ff4a36548ff2bac7',
         title: 'Văn bản hành chính',
-        value: 'vn-bn-hnh-chnh'
+        value: 'vn-bn-hnh-chnh',
       },
       {
         _id: '6170e7f1ff4a36548ff2bac6',
         title: 'Văn bản chuyên ngành',
-        value: 'vn-bn-chuyn-ngnh'
+        value: 'vn-bn-chuyn-ngnh',
       },
     ],
   },
@@ -173,12 +173,12 @@ const crmSource = [
       {
         _id: '6170e6a392733754a18dcde9',
         title: 'Công văn giấy',
-        value: 'cng-vn-giy'
+        value: 'cng-vn-giy',
       },
       {
         _id: '6170e84d92733754a18dce23',
         title: 'Công văn điện tử',
-        value: 'cng-vn-in-t'
+        value: 'cng-vn-in-t',
       },
     ],
   },
@@ -288,13 +288,13 @@ const crmSource = [
       {
         _id: '617682415fb9a028100f355e',
         title: 'X06',
-        value: 'x06'
+        value: 'x06',
       },
       {
         _id: '617a111b3710ef23fa2c281d',
         title: 'C06',
-        value: 'c06'
-      }
+        value: 'c06',
+      },
     ],
   },
   {
@@ -310,25 +310,24 @@ const crmSource = [
     data: [
       {
         extraValue: {
-          'Năm': '2022',
-          year: '2021'
+          Năm: '2022',
+          year: '2021',
         },
         title: 'Sổ mật',
-        value: 'somat'
+        value: 'somat',
       },
       {
-
         extraValue: {
-          'Năm': '2021',
+          Năm: '2021',
           year: '2021',
         },
         title: 'Sổ thường',
-        value: 'sothuong'
+        value: 'sothuong',
       },
       {
         title: 'so bt',
-        value: 'so_bt'
-      }
+        value: 'so_bt',
+      },
     ],
     code: 'S40',
   },
@@ -396,9 +395,9 @@ const crmSource = [
       },
       {
         title: 'Sổ VB đi 2',
-        value: 'SOD2'
-      }
-    ]
+        value: 'SOD2',
+      },
+    ],
   },
   {
     title: 'Vai trò người dùng',
@@ -408,13 +407,13 @@ const crmSource = [
     data: [
       {
         title: 'Sơ loại văn bản',
-        value: 'outlineDoc'
+        value: 'outlineDoc',
       },
       {
         title: 'Sơ loại lịch công tác',
-        value: 'so_loai_lich'
-      }
-    ]
+        value: 'so_loai_lich',
+      },
+    ],
   },
   {
     title: 'Mức độ hoàn thành',
@@ -424,17 +423,17 @@ const crmSource = [
     data: [
       {
         title: 'Tốt',
-        value: 'tot'
+        value: 'tot',
       },
       {
         title: 'Khá',
-        value: 'kha'
+        value: 'kha',
       },
       {
         title: 'Trung bình',
         value: 'TB',
-      }
-    ]
+      },
+    ],
   },
   {
     title: 'Sổ văn bản',
@@ -446,22 +445,22 @@ const crmSource = [
         title: 'Sổ VB đến',
         value: 'SOVBDEN',
         moduleCode: {
-          value: 'IncommingDocument',
-          api: '/api/incommingdocument',
+          value: 'importIncommingDocument',
+          api: '/api/importIncommingDocument',
           title: 'Văn bản đến',
-          label: 'Module'
-        }
+          label: 'Module',
+        },
       },
       {
         title: 'Sổ VB đi ',
         value: 'SOVBDI',
         moduleCode: {
           title: 'Văn bản đi',
-          value: 'OutGoingDocument',
-          api: '/api/outgoingdocument',
-          label: 'Module'
-        }
-      }
+          value: 'importOutgoingDocument',
+          api: '/api/importOutgoingDocument',
+          label: 'Module',
+        },
+      },
     ],
   },
   {
@@ -472,19 +471,19 @@ const crmSource = [
     data: [
       {
         title: 'Lịch thay đổi',
-        value: 'lich-thay-doi'
+        value: 'lich-thay-doi',
       },
       {
         title: 'Hoãn',
-        value: 'hoan'
+        value: 'hoan',
       },
       {
         title: 'Lịch bổ sung',
-        value: 'lich-bo-sung'
+        value: 'lich-bo-sung',
       },
       {
         title: 'Dự kiến',
-        value: 'du-kien'
+        value: 'du-kien',
       },
     ],
   },
@@ -496,8 +495,8 @@ const crmSource = [
     data: [
       {
         title: 'Trực chỉ huy',
-        value: 'truc chi huy'
-      }
+        value: 'truc chi huy',
+      },
     ],
   },
   {
@@ -508,19 +507,19 @@ const crmSource = [
     data: [
       {
         title: 'Nơi nhận1',
-        value: 'Nơi nhận1'
+        value: 'Nơi nhận1',
       },
       {
         title: 'Nơi nhận2',
-        value: 'Nơi nhận2'
+        value: 'Nơi nhận2',
       },
       {
         title: 'Nơi nhận3',
-        value: 'Nơi nhận3'
+        value: 'Nơi nhận3',
       },
       {
         title: 'Nơi nhận4',
-        value: 'Nơi nhận4'
+        value: 'Nơi nhận4',
       },
     ],
   },
@@ -532,11 +531,11 @@ const crmSource = [
     data: [
       {
         title: 'Chức vụ ký 1',
-        value: 'Chức vụ ký 1'
+        value: 'Chức vụ ký 1',
       },
       {
         title: 'Chức vụ ký 2',
-        value: 'Chức vụ ký 2'
+        value: 'Chức vụ ký 2',
       },
     ],
   },
@@ -548,7 +547,7 @@ const crmSource = [
     data: [
       {
         title: 'Tên người ký',
-        value: 'Tên người ký'
+        value: 'Tên người ký',
       },
     ],
   },
@@ -560,7 +559,7 @@ const crmSource = [
     data: [
       {
         title: 'Cục công nghệ thông tin',
-        value: 'Cục công nghệ thông tin'
+        value: 'Cục công nghệ thông tin',
       },
     ],
   },
@@ -572,7 +571,7 @@ const crmSource = [
     data: [
       {
         title: 'Số cục',
-        value: 'Số cục'
+        value: 'Số cục',
       },
     ],
   },
