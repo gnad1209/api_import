@@ -202,6 +202,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     const allResultFiles = [];
     const allErrors = []; // Mảng chứa tất cả các lỗi
     const errorsFile = [];
+    const errorDocuments = [];
     // Lặp lấy dữ liệu của file excel
     for (let i = 0; i < dataExcel.length; i++) {
       const row = dataExcel[i];
@@ -237,8 +238,9 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         },
       });
       if (documentIncomming) {
-        const errorDocument = { status: 400, message: `Đã tồn tại văn bản số ${i}` };
+        errorDocuments = errorDocuments.push({ status: 400, message: `Đã tồn tại văn bản số ${i}` });
         allErrors.push(...errorDocument);
+        continue;
       }
       const arrFiles = rowData.files
         .trim()
