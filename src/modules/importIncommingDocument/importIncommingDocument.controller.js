@@ -7,20 +7,14 @@ const importDataInZipFile = async (req, res, next) => {
     // khởi tạo biến lưu file zip,path file zip, clientId, folder lưu file sau khi giải nén
     const { file: zipFile } = req;
     const { clientId, userName } = req.query;
-
     // kiểm tra file được tải lên chưa
     if (!zipFile) return res.status(400).json({ status: 0, message: 'Tải file lên thất bại' });
 
     const time = Date.now();
     const baseDir = path.join(__dirname, '..', '..');
-    const firstUploadFolder = path.join(baseDir,  'files');
+    const firstUploadFolder = path.join(baseDir, 'files');
     const compressedFilePath = path.join(firstUploadFolder, zipFile.filename);
-    const folderToSave = path.join(
-      baseDir,
-      'uploads',
-      clientId,
-      `import_${time}`,
-    );
+    const folderToSave = path.join(baseDir, 'uploads', clientId, `import_${time}`);
     const folderToSaveAttachment = path.join(folderToSave, 'attachments');
 
     //giải nén file zip đầu vào
@@ -60,27 +54,19 @@ const importDataInZipFile = async (req, res, next) => {
     if (!dataExcel) {
       return res.status(400).json({ status: 0, message: 'Lấy dữ liệu từ file excel thất bại' });
     }
-
     // dữ liệu mẫu
     const code = 'IncommingDocument';
     //xử lý dữ liệu lưu các bản ghi vào db
-    const data = await service.processData(
-      dataExcel,
-      dataFromAttachment,
-      folderToSave,
-      clientId,
-      userName,
-      code,
-    );
-    if ( data && data.saveDocument && data.saveDocument.length < 1) {
+    const data = await service.processData(dataExcel, dataFromAttachment, folderToSave, clientId, userName, code);
+
+    if (data.status === 400) {
       await deleteFolderAndContent(folderToSave);
       return res.status(400).json(data);
     }
     const document = service.selectFieldsDocument(data.saveDocument);
-    // const files = service.selectFieldsFile(data.savedFiles);
     return res.status(200).json({ checkWarning: data.errors, data: document });
   } catch (e) {
-    console.log('ERROR: ',e)
+    console.log('ERROR: ', e);
     return res.status(400).json(e);
   }
 };

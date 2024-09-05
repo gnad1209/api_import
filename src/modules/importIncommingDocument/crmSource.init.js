@@ -1,46 +1,46 @@
 const crmSource = [
-  // {
-  //   title: 'Nguồn',
-  //   canDragDrop: true,
-  //   type: 'DocumentConfig',
-  //   code: 'S06',
-  // },
-  // {
-  //   title: 'Ngành nghề',
-  //   canDragDrop: true,
-  //   type: 'DocumentConfig',
-  //   code: 'S12',
-  // },
-  // {
-  //   title: 'Khu vực địa lý',
-  //   canDragDrop: true,
-  //   type: 'DocumentConfig',
-  //   code: 'S10',
-  // },
-  // {
-  //   title: 'Loại sự kiện',
-  //   canDragDrop: true,
-  //   type: 'DocumentConfig',
-  //   code: 'S16',
-  // },
-  // {
-  //   title: 'Loại đơn vị',
-  //   canDragDrop: false,
-  //   type: 'DocumentConfig',
-  //   code: 'S01',
-  // },
-  // {
-  //   title: 'Ngân hàng',
-  //   canDragDrop: false,
-  //   type: 'DocumentConfig',
-  //   code: 'S04',
-  // },
-  // {
-  //   title: 'Công đoạn',
-  //   canDragDrop: false,
-  //   type: 'DocumentConfig',
-  //   code: 'S05',
-  // },
+  {
+    title: 'Nguồn',
+    canDragDrop: true,
+    type: 'DocumentConfig',
+    code: 'S06',
+  },
+  {
+    title: 'Ngành nghề',
+    canDragDrop: true,
+    type: 'DocumentConfig',
+    code: 'S12',
+  },
+  {
+    title: 'Khu vực địa lý',
+    canDragDrop: true,
+    type: 'DocumentConfig',
+    code: 'S10',
+  },
+  {
+    title: 'Loại sự kiện',
+    canDragDrop: true,
+    type: 'DocumentConfig',
+    code: 'S16',
+  },
+  {
+    title: 'Loại đơn vị',
+    canDragDrop: false,
+    type: 'DocumentConfig',
+    code: 'S01',
+  },
+  {
+    title: 'Ngân hàng',
+    canDragDrop: false,
+    type: 'DocumentConfig',
+    code: 'S04',
+  },
+  {
+    title: 'Công đoạn',
+    canDragDrop: false,
+    type: 'DocumentConfig',
+    code: 'S05',
+  },
   {
     title: 'Loại văn bản',
     canDragDrop: false,
@@ -78,25 +78,25 @@ const crmSource = [
       {
         _id: '617a12543710ef23fa2c286a',
         title: 'Thường',
-        value: 'Dthng',
+        value: 'thng',
         index: 4,
       },
       {
         _id: '6170e8c992733754a18dce2a',
         title: 'Khẩn',
-        value: 'Ckhn',
+        value: 'khn',
         index: 3,
       },
       {
         _id: '6170e8c992733754a18dce2b',
         title: 'Thượng khẩn',
-        value: 'Bthng-khn',
+        value: 'thng-khn',
         index: 2,
       },
       {
         _id: '6170e8c992733754a18dce2c',
         title: 'Hỏa tốc',
-        value: 'Aha-tc',
+        value: 'ha-tc',
         index: 1,
       },
     ],
@@ -129,18 +129,18 @@ const crmSource = [
       },
     ],
   },
-  // {
-  //   title: 'Nơi lưu trữ công văn',
-  //   canDragDrop: false,
-  //   code: 'S22',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Nơi phát hành công văn',
-  //   canDragDrop: false,
-  //   code: 'S23',
-  //   type: 'DocumentConfig',
-  // },
+  {
+    title: 'Nơi lưu trữ công văn',
+    canDragDrop: false,
+    code: 'S22',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Nơi phát hành công văn',
+    canDragDrop: false,
+    code: 'S23',
+    type: 'DocumentConfig',
+  },
   {
     title: 'Lĩnh vực',
     canDragDrop: false,
@@ -182,103 +182,102 @@ const crmSource = [
       },
     ],
   },
-  // {
-  //   title: 'Nguồn đơn',
-  //   canDragDrop: false,
-  //   code: 'S28',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Ký tên trên đơn',
-  //   canDragDrop: false,
-  //   code: 'S29',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Phân loại đơn',
-  //   canDragDrop: false,
-  //   code: 'S30',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Chức vụ',
-  //   canDragDrop: false,
-  //   code: 'S31',
-  //   type: 'DocumentConfig',
-  //   data: [
-  //     {
-  //       title: 'Bộ trưởng',
-  //       value: 'b-trn',
-  //     },
-  //     {
-  //       title: 'Thứ trưởng',
-  //       value: 'th-trn',
-  //     },
-  //     {
-  //       title: 'Cục trưởng',
-  //       value: 'cc-trn',
-  //     },
-  //     {
-
-  //       title: 'Phó cục trưởng',
-  //       value: 'ph-cc-trng',
-  //     },
-  //     {
-  //       title: 'Trưởng phòng',
-  //       value: 'trng-phng',
-  //     },
-  //     {
-  //       title: 'Phó trưởng phòng',
-  //       value: 'ph-trng-phng',
-  //     },
-  //     {
-  //       title: 'Cán bộ',
-  //       value: 'cn-b',
-  //     }
-  //   ]
-  // },
-  // {
-  //   title: 'Chức vụ đảng',
-  //   canDragDrop: false,
-  //   code: 'S32',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Đơn vị công tác',
-  //   canDragDrop: false,
-  //   code: 'S33',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Hình thức kỷ luật ban đầu',
-  //   canDragDrop: false,
-  //   code: 'S34',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Cấp quyết định kỷ luật',
-  //   canDragDrop: false,
-  //   code: 'S35',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Lĩnh vực công tác',
-  //   canDragDrop: false,
-  //   code: 'S36',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Cấp ủy viên',
-  //   canDragDrop: false,
-  //   code: 'S37',
-  //   type: 'DocumentConfig',
-  // },
-  // {
-  //   title: 'Chức vụ chính quyền',
-  //   canDragDrop: false,
-  //   code: 'S38',
-  //   type: 'DocumentConfig',
-  // },
+  {
+    title: 'Nguồn đơn',
+    canDragDrop: false,
+    code: 'S28',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Ký tên trên đơn',
+    canDragDrop: false,
+    code: 'S29',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Phân loại đơn',
+    canDragDrop: false,
+    code: 'S30',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Chức vụ',
+    canDragDrop: false,
+    code: 'S31',
+    type: 'DocumentConfig',
+    data: [
+      {
+        title: 'Bộ trưởng',
+        value: 'b-trn',
+      },
+      {
+        title: 'Thứ trưởng',
+        value: 'th-trn',
+      },
+      {
+        title: 'Cục trưởng',
+        value: 'cc-trn',
+      },
+      {
+        title: 'Phó cục trưởng',
+        value: 'ph-cc-trng',
+      },
+      {
+        title: 'Trưởng phòng',
+        value: 'trng-phng',
+      },
+      {
+        title: 'Phó trưởng phòng',
+        value: 'ph-trng-phng',
+      },
+      {
+        title: 'Cán bộ',
+        value: 'cn-b',
+      },
+    ],
+  },
+  {
+    title: 'Chức vụ đảng',
+    canDragDrop: false,
+    code: 'S32',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Đơn vị công tác',
+    canDragDrop: false,
+    code: 'S33',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Hình thức kỷ luật ban đầu',
+    canDragDrop: false,
+    code: 'S34',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Cấp quyết định kỷ luật',
+    canDragDrop: false,
+    code: 'S35',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Lĩnh vực công tác',
+    canDragDrop: false,
+    code: 'S36',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Cấp ủy viên',
+    canDragDrop: false,
+    code: 'S37',
+    type: 'DocumentConfig',
+  },
+  {
+    title: 'Chức vụ chính quyền',
+    canDragDrop: false,
+    code: 'S38',
+    type: 'DocumentConfig',
+  },
   {
     title: 'Đơn vị gửi',
     canDragDrop: false,
@@ -331,58 +330,58 @@ const crmSource = [
     ],
     code: 'S40',
   },
-  // {
-  //   title: 'Lĩnh vực khiếu tố',
-  //   canDragDrop: false,
-  //   type: 'DocumentConfig',
-  //   extraFields: [
-  //     {
-  //       name: 'letterType',
-  //       title: 'Loại đơn thư',
-  //       type: 'Source|CrmSource,S30|Value||value',
-  //       configType: 'crmSource',
-  //       configCode: 'S30',
-  //     },
-  //     {
-  //       name: 'unitType',
-  //       title: 'Loại đơn vị',
-  //       type: 'MenuItem',
-  //       menuItem: [
-  //         {
-  //           code: 'ca-nhan',
-  //           color: 'rgb(52, 11, 214)',
-  //           name: 'Cá nhân',
-  //           type: 'ca-nhan',
-  //         },
-  //         {
-  //           code: 'to-chuc',
-  //           color: 'rgb(52, 11, 214)',
-  //           name: 'Tổ chức',
-  //           type: 'to-chuc',
-  //         },
-  //       ],
-  //     },
-  //   ],
-  //   code: 'S41',
-  // },
-  // {
-  //   title: 'Kết quả xử lý',
-  //   canDragDrop: false,
-  //   type: 'DocumentConfig',
-  //   code: 'S42',
-  // },
-  // {
-  //   title: 'Kết quả lưu đơn',
-  //   canDragDrop: false,
-  //   type: 'DocumentConfig',
-  //   code: 'S43',
-  // },
-  // {
-  //   title: 'Cấp bậc',
-  //   canDragDrop: false,
-  //   type: 'DocumentConfig',
-  //   code: 'S44',
-  // },
+  {
+    title: 'Lĩnh vực khiếu tố',
+    canDragDrop: false,
+    type: 'DocumentConfig',
+    extraFields: [
+      {
+        name: 'letterType',
+        title: 'Loại đơn thư',
+        type: 'Source|CrmSource,S30|Value||value',
+        configType: 'crmSource',
+        configCode: 'S30',
+      },
+      {
+        name: 'unitType',
+        title: 'Loại đơn vị',
+        type: 'MenuItem',
+        menuItem: [
+          {
+            code: 'ca-nhan',
+            color: 'rgb(52, 11, 214)',
+            name: 'Cá nhân',
+            type: 'ca-nhan',
+          },
+          {
+            code: 'to-chuc',
+            color: 'rgb(52, 11, 214)',
+            name: 'Tổ chức',
+            type: 'to-chuc',
+          },
+        ],
+      },
+    ],
+    code: 'S41',
+  },
+  {
+    title: 'Kết quả xử lý',
+    canDragDrop: false,
+    type: 'DocumentConfig',
+    code: 'S42',
+  },
+  {
+    title: 'Kết quả lưu đơn',
+    canDragDrop: false,
+    type: 'DocumentConfig',
+    code: 'S43',
+  },
+  {
+    title: 'Cấp bậc',
+    canDragDrop: false,
+    type: 'DocumentConfig',
+    code: 'S44',
+  },
   {
     title: 'Sổ VB đi',
     canDragDrop: false,
@@ -540,14 +539,55 @@ const crmSource = [
     ],
   },
   {
-    title: 'Nguời ký',
-    canDragDrop: false,
-    code: 'nguời ky',
-    type: 'CalendarConfig',
+    canDragDrop: true,
+    code: 'nguoiki',
+    extraFields: [],
+    originalData: [],
+    status: 1,
+    canDelete: false,
+    state: '3',
+    title: 'Người kí',
+    type: 'DocumentConfig',
     data: [
       {
-        title: 'Tên người ký',
-        value: 'Tên người ký',
+        index: 0,
+        title: 'TP Hoàng Văn Hồ',
+        value: 'NK0001',
+        moduleCode: {
+          title: 'Văn bản đến',
+          value: 'IncommingDocument',
+          label: 'Module',
+        },
+      },
+      {
+        index: 1,
+        title: 'Nguyễn Hoàng Mai',
+        value: 'NK0002',
+        moduleCode: {
+          title: 'Văn bản đến',
+          value: 'IncommingDocument',
+          label: 'Module',
+        },
+      },
+      {
+        index: 2,
+        title: 'Nguyễn Thị Thao',
+        value: 'NK0003',
+        moduleCode: {
+          title: 'Văn bản đến',
+          value: 'IncommingDocument',
+          label: 'Module',
+        },
+      },
+      {
+        index: 3,
+        title: 'Hoàng Minh',
+        value: 'NK0004',
+        moduleCode: {
+          title: 'Văn bản đến',
+          value: 'IncommingDocument',
+          label: 'Module',
+        },
       },
     ],
   },

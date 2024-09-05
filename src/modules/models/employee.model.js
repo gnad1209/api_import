@@ -5,6 +5,7 @@ const employeeSchema = new mongoose.Schema(
   {
     username: { type: String },
     departmentName: { type: String },
+    code: String,
   },
   {
     timestamps: true,

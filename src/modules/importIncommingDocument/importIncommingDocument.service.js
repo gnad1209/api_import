@@ -224,8 +224,26 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         continue; // Nếu có lỗi, bỏ qua dòng này và tiếp tục với dòng tiếp theo
       }
 
-      // check trùng
-      let documentIncomming = await importIncommingDocument
+      //check trùng trong file excel
+      const duplicateInMemory = resultDocs.some((doc) => {
+        return (
+          doc.toBook === rowData.toBook &&
+          doc.receiverUnit === employee.organizationUnit.organizationUnitId &&
+          doc.senderUnit === rowData.senderUnit &&
+          moment(doc.documentDate).isSame(moment(rowData.documentDate, 'DD/MM/YYYY'), 'day')
+        );
+      });
+
+      if (duplicateInMemory) {
+        const errorMessage = `Đã tồn tại văn bản số ${i + 1} trong các tài liệu đang nhập`;
+        if (!allErrors.some((error) => error.message === errorMessage)) {
+          errorDocuments.push({ status: 400, message: errorMessage });
+        }
+        continue;
+      }
+
+      // check trùng trong db
+      const documentIncomming = await importIncommingDocument
         .findOne(
           {
             status: 1,
@@ -240,7 +258,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
-
       if (documentIncomming) {
         const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
         if (!allErrors.some((error) => error.message === errorMessage)) {
@@ -248,18 +265,19 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         }
         continue;
       }
-      if (rowData.signer) {
-        const dataSigner = await Employee.findOne({ code: rowData.signer.trim() }, '_id').lean();
+      // check bằng danh mục có sẵn
+      // if (rowData.signer) {
+      //   const dataSigner = await Employee.findOne({ code: rowData.signer.trim() }, '_id').lean();
 
-        if (!dataSigner) {
-          const errorMessage = `Người ký của văn bản số ${i + 1} ko tồn tại`;
-          if (!allErrors.some((error) => error.message === errorMessage)) {
-            errorDocuments.push({ status: 400, message: errorMessage });
-          }
-          continue;
-        }
-        rowData.signer = { title: dataSigner.title, value: dataSigner.value };
-      }
+      //   if (!dataSigner) {
+      //     const errorMessage = `Người ký của văn bản số ${i + 1} ko tồn tại`;
+      //     if (!allErrors.some((error) => error.message === errorMessage)) {
+      //       errorDocuments.push({ status: 400, message: errorMessage });
+      //     }
+      //     continue;
+      //   }
+      //   rowData.signer = { title: dataSigner.title, value: dataSigner.value };
+      // }
       const arrFiles = rowData.files ? rowData.files.trim().split(',') : [];
       // Trim từng item trước khi kiểm tra
 
@@ -279,11 +297,12 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
 
       // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
       for (const file of resultFile) {
-        if (!file.mid) {
-          file.mid = document._id;
-        } else {
-          return { status: 400, message: `file đính kèm ${file.name} của vản bản có id ${file.mid}` };
-        }
+        // if (!file.mid) {
+        //   file.mid = document._id;
+        // } else {
+        //   return { status: 400, message: `file đính kèm ${file.name} của vản bản có id ${file.mid}` };
+        // }
+        file.mid = document._id;
         await file.save();
       }
       resultDocs.push(document);
@@ -291,10 +310,13 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     allErrors.push(...errorDocuments);
     // Lưu tất cả các bản ghi mới từ file excel
     const savedDocument = await importIncommingDocument.insertMany(resultDocs);
+    if (!savedDocument) {
+      savedDocument = [];
+    }
     // Trả về những bản ghi mới từ file excel và file đính kèm
     const logErrors = allErrors.length > 0 ? allErrors : null;
 
-    return { saveDocument: savedDocument, savedFiles: allResultFiles, errors: logErrors };
+    return { saveDocument: savedDocument, errors: logErrors };
   } catch (error) {
     console.log('ERRO222R: ', error);
     return error;
@@ -322,6 +344,7 @@ const extractRowData = (row) => {
     const receiveDate = row[11];
     const toBookDate = row[12];
     const deadLine = row[13];
+    const signer = row[14];
 
     return {
       toBook,
@@ -338,6 +361,7 @@ const extractRowData = (row) => {
       receiveDate,
       toBookDate,
       deadLine,
+      signer,
     };
   } catch (e) {
     return e;
@@ -381,16 +405,18 @@ const validateRequiredFields = async (fields, rowNumber) => {
         'code data',
       )
       .lean();
+    // const dataCrm = require('./crmSource.init');
     const validationRules = {
       receiveMethod: [], // 27
       urgencyLevel: [], // do khan
       privateLevel: [],
       documentType: [],
       documentField: [],
+      signer: [],
     };
     const fieldTitles = {}; // This will store the titles
 
-    dataCrm.crmSource.forEach((element) => {
+    dataCrm.forEach((element) => {
       switch (element.code) {
         case 'S27':
           validationRules.receiveMethod = element.data.map((item) => item.value);
@@ -412,11 +438,14 @@ const validateRequiredFields = async (fields, rowNumber) => {
           validationRules.documentField = element.data.map((item) => item.value);
           fieldTitles.documentField = element.title;
           break;
+        case 'nguoiki':
+          validationRules.signer = element.data.map((item) => item.value);
+          fieldTitles.signer = element.title;
+          break;
         default:
           break;
       }
     });
-
     // Kiểm tra các trường theo giá trị hợp lệ
     for (const [field, validValues] of Object.entries(validationRules)) {
       const value = fields[field] || '';
@@ -431,13 +460,13 @@ const validateRequiredFields = async (fields, rowNumber) => {
     }
 
     // Kiểm tra document tồn tại
-    const document = await Document.findOne({ name: fields.toBookNumber });
-    if (!document) {
-      resultErr.push({
-        status: 400,
-        errors: [`Không tìm thấy văn bản đến - dòng thứ ${rowNumber}`],
-      });
-    }
+    // const document = await Document.findOne({ name: fields.toBookNumber });
+    // if (!document) {
+    //   resultErr.push({
+    //     status: 400,
+    //     errors: [`Không tìm thấy văn bản đến - dòng thứ ${rowNumber}`],
+    //   });
+    // }
     // Trả về mảng lỗi nếu có
     return resultErr;
   } catch (e) {
@@ -456,7 +485,6 @@ const validateRequiredFields = async (fields, rowNumber) => {
 const validateDates = (documentDate, receiveDate, toBookDate, deadLine, rowNumber) => {
   try {
     const errors = [];
-
     // Đổi định dạng các ngày về YYYY/MM/DD
     const docDate = moment(documentDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
     const recDate = moment(receiveDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
@@ -594,7 +622,6 @@ const createDocument = (rowData, resultFile) => {
     // files: resultFile.length >= 1 ? resultFile.map((item) => item._id) : null,
     files: resultFile.length >= 1 ? resultFile.map((item) => ({ id: item._id, name: item.name })) : null,
   });
-
   return document;
 };
 
@@ -604,68 +631,54 @@ const createDocument = (rowData, resultFile) => {
  * @returns {Object} Đối tượng document mới.
  */
 const selectFieldsDocument = (data) => {
-  const document = data.map(
-    ({
-      toBook,
-      abstractNote,
-      toBookNumber,
-      urgencyLevel,
-      senderUnit,
-      // files,
-      bookDocumentId,
-      secondBook,
-      receiverUnit,
-      documentType,
-      documentField,
-      receiveMethod,
-      privateLevel,
-      documentDate,
-      receiveDate,
-      toBookDate,
-      deadLine,
-      kanbanStatus,
-      createdBy,
-    }) => ({
-      toBook,
-      abstractNote,
-      toBookNumber,
-      urgencyLevel,
-      senderUnit,
-      // files,
-      bookDocumentId,
-      secondBook,
-      receiverUnit,
-      documentType,
-      documentField,
-      receiveMethod,
-      privateLevel,
-      documentDate,
-      receiveDate,
-      toBookDate,
-      deadLine,
-      kanbanStatus,
-      createdBy,
-    }),
-  );
-  return document;
+  try {
+    if (!data) {
+      return [];
+    }
+    const document = data.map(
+      ({
+        toBook,
+        abstractNote,
+        urgencyLevel,
+        senderUnit,
+        bookDocumentId,
+        secondBook,
+        receiverUnit,
+        documentType,
+        documentField,
+        receiveMethod,
+        privateLevel,
+        documentDate,
+        receiveDate,
+        toBookDate,
+        deadLine,
+        kanbanStatus,
+        createdBy,
+      }) => ({
+        toBook,
+        abstractNote,
+        urgencyLevel,
+        senderUnit,
+        bookDocumentId,
+        secondBook,
+        receiverUnit,
+        documentType,
+        documentField,
+        receiveMethod,
+        privateLevel,
+        documentDate,
+        receiveDate,
+        toBookDate,
+        deadLine,
+        kanbanStatus,
+        createdBy,
+      }),
+    );
+    return document;
+  } catch (e) {
+    return e;
+  }
 };
-
-// /**
-//  * chọn các trường từ bản ghi vừa được tạo
-//  * @param {Object} data - Dữ liệu file
-//  * @returns {Object} Đối tượng document mới.
-//  */
-// const selectFieldsFile = (data) => {
-//   const file = data.map(({ fullPath, name, parentPath, username, realName, mid }) => ({
-//     fullPath,
-//     name,
-//     parentPath,
-//     username,
-//     realName,
-//     mid,
-//   }));
-//   return file;
-// };
 
 module.exports = {
   unzipFile,
@@ -675,5 +688,4 @@ module.exports = {
   processData,
   checkStorage,
   selectFieldsDocument,
-  // selectFieldsFile,
 };

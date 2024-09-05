@@ -5,7 +5,7 @@ const multer = require('multer');
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, `${global.appRoot}/files/`);
-    // cb(null, `src/modules/importIncommingDocument/files`);
+    // cb(null, `src/files`);
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now() * 1}___${file.originalname}`);
