@@ -1,13 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
-<<<<<<< HEAD:src/modules/incommingDocument/incommingDocument.service.js
-const incommingDocument = require('./incommingDocument.model');
-const Document = require('../../models/document.model');
-const crm = require('../../models/crmSource.model');
-const fileManager = require('../../models/fileManager.model');
-const Client = require('../../models/client.model');
-=======
 const importIncommingDocument = require('./importIncommingDocument.model');
 const Document = require('../models/document.model');
 const crm = require('../models/crmSource.model');
@@ -15,7 +8,6 @@ const Employee = require('../models/employee.model');
 const organizationUnit = require('../models/organizationUnit.model');
 const fileManager = require('../models/fileManager.model');
 const Client = require('../models/client.model');
->>>>>>> main:src/modules/importIncommingDocument/importIncommingDocument.service.js
 const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
@@ -219,55 +211,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       rowData.createdBy = createdBy;
 
       // Validate dữ liệu từ file excel
-<<<<<<< HEAD:src/modules/incommingDocument/incommingDocument.service.js
-      console.log("rowData: ", rowData);
-      validateRequiredFields(rowData);
-      
-      validateDates(rowData.documentDate, rowData.receiveDate, rowData.toBookDate, rowData.deadLine);
-
-      // Chuyển đổi chuỗi files sang dạng mảng
-      let documentIncomming = await incommingDocument.findOne({ toBook: rowData.toBook });
-
-      // Kiểm tra bản ghi đã tồn tại các trường duy nhất chưa
-      if (!documentIncomming) {
-        //chuyển chuỗi các tên file từ excel thành mảng
-        const arrFiles = rowData.files
-          .trim()
-          .split(',')
-          .map((item) => item.trim());
-        const resultFile = await processAttachments(dataAttachments, arrFiles, folderToSave);
-        allResultFiles.push(...resultFile); // Lưu tất cả các file mới vào mảng allResultFiles
-
-        let tobookNumber = await Document.findOne({ name: rowData.toBookNumber });
-        let senderUnit = await Document.findOne({ value: rowData.senderUnit, type: 'senderUnit' });
-
-        if (!senderUnit) {
-          senderUnit = new organizationUnit({
-            title: rowData.senderUnit,
-            value: rowData.senderUnit_en,
-            type: 'senderUnit',
-          });
-          await senderUnit.save();
-          rowData.senderUnit = rowData.senderUnit_en;
-        }
-        if (tobookNumber) {
-          tobookNumber.number = Number(tobookNumber.number) + 1;
-          await tobookNumber.save();
-          rowData.bookDocumentId = tobookNumber._id;
-          rowData.toBookNumber = tobookNumber.number;
-        }
-
-        const document = await createDocument(rowData, resultFile);
-
-        // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
-        for (const file of resultFile) {
-          if (!file.mid) {
-            file.mid = document._id;
-          } else throw new Error(`file đính kèm ${file.name} của vản bản có id ${file.mid}`);
-          await file.save();
-        }
-        resultDocs.push(document);
-=======
       const errors = await validateRequiredFields(rowData, i + 1);
       const errorsDate = validateDates(
         rowData.documentDate,
@@ -280,7 +223,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       if (errors.length > 0 || errorsDate.length > 0) {
         allErrors.push(...errors, ...errorsDate); // Đẩy tất cả lỗi vào mảng lỗi chung
         continue; // Nếu có lỗi, bỏ qua dòng này và tiếp tục với dòng tiếp theo
->>>>>>> main:src/modules/importIncommingDocument/importIncommingDocument.service.js
       }
 
       // Xử lý đính kèm
@@ -370,12 +312,7 @@ const extractRowData = (row) => {
   const toBook = row[0];
   const abstractNote = row[1] || '';
   const toBookNumber = row[2] || '';
-<<<<<<< HEAD:src/modules/incommingDocument/incommingDocument.service.js
-  const urgencyLevel = 'khn';
-  const urgencyLevel_en = removeVietnameseTones(urgencyLevel);
-=======
   const urgencyLevel = row[3] || '';
->>>>>>> main:src/modules/importIncommingDocument/importIncommingDocument.service.js
   const senderUnit = row[4] || '';
   const files = row[5] || '';
   const secondBook = row[6] || '';
@@ -424,17 +361,9 @@ const validateRequiredFields = async (fields, rowNumber) => {
     toBookDate: 'Thiếu ngày vào sổ - cột 17',
   };
 
-<<<<<<< HEAD:src/modules/incommingDocument/incommingDocument.service.js
-  console.error('===============================');
-  const dataCrm = await crm.find();
-  // console.log('dataCrm', dataCrm);
-  const validationRules = {
-    receiveMethod: [], //27
-=======
   const dataCrm = await crm.find();
   const validationRules = {
     receiveMethod: [], // 27
->>>>>>> main:src/modules/importIncommingDocument/importIncommingDocument.service.js
     urgencyLevel: [], // do khan
     privateLevel: [],
     documentType: [],
@@ -442,30 +371,6 @@ const validateRequiredFields = async (fields, rowNumber) => {
   };
 
   dataCrm.forEach((element) => {
-<<<<<<< HEAD:src/modules/incommingDocument/incommingDocument.service.js
-    console.log('dataCrm', element.code);
-
-    switch (element.code) {
-      case 'S27':
-        validationRules.receiveMethod = element.data.map((item) => item.value);
-
-        break;
-      case 'S20':
-        validationRules.urgencyLevel = element.data.map((item) => item.value);
-
-        break;
-      case 'S21':
-        validationRules.privateLevel = element.data.map((item) => item.value);
-
-        break;
-      case 'S19':
-        validationRules.documentType = element.data.map((item) => item.value);
-
-        break;
-      case 'S26':
-        validationRules.documentField = element.data.map((item) => item.value);
-
-=======
     switch (element.code) {
       case 'S27':
         validationRules.receiveMethod = element.data.map((item) => item.value);
@@ -481,24 +386,12 @@ const validateRequiredFields = async (fields, rowNumber) => {
         break;
       case 'S26':
         validationRules.documentField = element.data.map((item) => item.value);
->>>>>>> main:src/modules/importIncommingDocument/importIncommingDocument.service.js
         break;
       default:
         break;
     }
   });
 
-<<<<<<< HEAD:src/modules/incommingDocument/incommingDocument.service.js
-  // const validationRules = {
-  //   receiveMethod: ['cong van giay', 'cong van dien tu'], //27
-  //   urgencyLevel: ['thuong', 'khan', 'thuong khan', 'hoa toc'], // do khan
-  //   privateLevel: ['mat', 'thuong', 'tuyet mat', 'toi mat'],
-  //   documentType: ['cong van', 'don thu', 'tuong trinh', 'quyet dinh'],
-  //   documentField: ['van ban quy pham phap luat', 'van ban hanh chinh', 'van ban chuyen nganh'],
-  // };
-
-=======
->>>>>>> main:src/modules/importIncommingDocument/importIncommingDocument.service.js
   // Kiểm tra các trường bắt buộc
   for (const [field, errorMessage] of Object.entries(requiredFields)) {
     if (!fields[field]) {
@@ -511,18 +404,12 @@ const validateRequiredFields = async (fields, rowNumber) => {
 
   // Kiểm tra các trường theo giá trị hợp lệ
   for (const [field, validValues] of Object.entries(validationRules)) {
-<<<<<<< HEAD:src/modules/incommingDocument/incommingDocument.service.js
-    const value = fields[`${field}`] || '';
-    if (!validValues.includes(value)) {
-      throw new Error(`giá trị ${field} phải là 1 trong những loại cho trước - cột ${getColumnNumber(field)}`);
-=======
     const value = fields[field] || '';
     if (validValues.length && !validValues.includes(value)) {
       resultErr.push({
         status: 400,
         errors: [`Giá trị ${field} phải là một trong những loại cho trước - dòng thứ ${rowNumber}`],
       });
->>>>>>> main:src/modules/importIncommingDocument/importIncommingDocument.service.js
     }
   }
 
