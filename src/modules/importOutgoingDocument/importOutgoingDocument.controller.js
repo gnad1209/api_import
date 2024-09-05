@@ -8,7 +8,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
   try {
     // kiểm tra file có hợp lệ ko ?
     let { zipFile } = req.files;
-    if (!zipFile || zipFile == null || File.length < 1) {
+    if (!zipFile || zipFile == null) {
       return res.status(400).json({
         status: 0,
         message: 'Upload files failed',
@@ -22,6 +22,8 @@ const importimportOutgoingDocument = async (req, res, next) => {
     // lấy thông tin client từ query
     const processDataConfig = FileService.getProcessDataConfig(req.query);
 
+    console.log('1 @@ lấy thông tin tu client thanh cong', processDataConfig);
+
     // kiểm tra dung lượng của client còn đủ không
     if (processDataConfig.clientId) {
       const storageCheckResult = await ClientService.checkStorageCapacity(processDataConfig.clientId, totalSize);
@@ -29,6 +31,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
         return res.json({ status: 0, message: storageCheckResult.message });
       }
     }
+    console.log('2 @@ dung lượng đủ');
 
     // giải nén
     const unzipData = await UnZipService.extractZip(zipFile0.path, processDataConfig.clientId);
@@ -49,6 +52,8 @@ const importimportOutgoingDocument = async (req, res, next) => {
       });
     }
 
+    console.log('3 @@ giải nén thành công');
+
     // create bản ghi cho tất cả các file
     const [uploadedZipFile, uploadedUnZipFile, uploadedUnzipToUnZipFile] = await FileService.processAndSaveFiles(
       zipFile0,
@@ -58,6 +63,8 @@ const importimportOutgoingDocument = async (req, res, next) => {
 
     // tạo folder và lưu file
     const folderSaveFiles = await FileService.createFolderAndSaveFiles(uploadedZipFile.toObject());
+
+    console.log('4 @@ lưu folder xong');
 
     // lấy dữ liệu từ file excel
     let excelData = [];
@@ -77,7 +84,11 @@ const importimportOutgoingDocument = async (req, res, next) => {
         message: 'đọc file excel thất bại',
       });
     }
-    // console.log('excelData == ', excelData);
+
+    console.log('5 @@ đọc file excel thành công');
+    // console.log('excelData == ', excelData);/
+
+    console.log('6 @@ validate thành công');
 
     // Process data
     const data = await DataProcessingService.dataProcessing(
@@ -86,7 +97,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
       processDataConfig,
       uploadedUnzipToUnZipFile,
     );
-
+    console.log('7 @@ Lưu vào database thành công');
     console.log('DONE DONE DONE DONE DONE DONE DONE');
 
     return res.json({ status: 1, data: data });

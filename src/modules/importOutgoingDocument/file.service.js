@@ -83,7 +83,7 @@ class FileService {
 
       const compressedFileName = compressedFile.filename;
       const folderToSave = path.join(__dirname, '..', 'uploads', `${defaultClientId}`, `import_${time}`);
-      const firstUploadFolder = path.join(__dirname, '..', 'files');
+      const firstUploadFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'files');
 
       const compressedFilePath = path.join(firstUploadFolder, compressedFileName);
       const newCompressedFilePath = path.join(folderToSave, compressedFile.name);

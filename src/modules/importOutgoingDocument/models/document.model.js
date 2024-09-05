@@ -1,22 +1,23 @@
+const conn = require('../../config/appConn');
 const mongoose = require('mongoose');
 
 // Định nghĩa schema cho Books
-const documentSchema = new mongoose.Schema(
+const outgoingDocumentSchema = new mongoose.Schema(
   {
     toBook: { type: Number, required: true }, // Số, ký hiệu văn bản
     abstractNote: { type: String, required: true }, // Trích yếu
-    urgencyLevel: { type: String, default: 'thng' }, // Độ khẩn
+    urgencyLevel: { type: String }, // Độ khẩn
     senderUnit: { type: String, required: true }, // Đơn vị soạn thảo
-    documentType: { type: String, default: 'Congvan' }, // Loại văn bản
+    documentType: { type: String }, // Loại văn bản
     releaseDate: { type: String }, // Ngày ban hành
     releaseNo: { type: String }, // Số văn bản đi
-    documentField: { type: String, default: 'vn-bn-quy-phm-php-lut' }, // Lĩnh vực
-    privateLevel: { type: String, default: 'mt' }, // Độ mật
+    documentField: { type: String }, // Lĩnh vực
+    privateLevel: { type: String }, // Độ mật
     currentNote: { type: String }, // Nội dung xử lý
     incommingDocument: { type: String }, // Phúc đáp văn bản
     tasks: { type: String }, // Công việc liên quan
-    autoReleaseCheck: { type: Boolean, default: false }, // Tự động ban hành
-    caSignCheck: { type: Boolean, default: false }, // Ký CA
+    autoReleaseCheck: { type: Boolean }, // Tự động ban hành
+    caSignCheck: { type: Boolean }, // Ký CA
     currentRole: { type: String }, // Vai trò
     nextRole: { type: String }, // Vai trò tiếp theo
     fileUpload: { type: mongoose.Schema.Types.ObjectId, ref: 'fileManager' }, //VĂN BẢN DỰ THẢO
@@ -55,10 +56,10 @@ const documentSchema = new mongoose.Schema(
     toBookCodeDepartment: { type: String },
   },
   {
-    collection: 'document',
+    collection: 'outgoingDocument',
     timestamps: true,
   },
 );
 
 // Tạo model từ schema
-module.exports = mongoose.model('document', documentSchema);
+module.exports = conn.model('outgoingDocument', outgoingDocumentSchema);

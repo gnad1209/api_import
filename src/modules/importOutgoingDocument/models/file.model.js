@@ -1,3 +1,4 @@
+const conn = require('../../config/appConn');
 const mongoose = require('mongoose');
 
 const FileSchema = new mongoose.Schema({
@@ -8,9 +9,9 @@ const FileSchema = new mongoose.Schema({
   mimetype: { type: String, default: '' }, 
   field: { type: String, default: '' }, 
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  book: { type: mongoose.Schema.Types.ObjectId, ref: 'Book' },
+  book: { type: mongoose.Schema.Types.ObjectId, ref: 'outgoingDocument' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('File', FileSchema);
+module.exports = conn.model('File', FileSchema);
