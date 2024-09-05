@@ -37,7 +37,7 @@ function removeVietnameseTones(str) {
 // xóa folder trong project
 async function deleteFolderAndContent(folderPath) {
   try {
-    await fsPromises.rm(folderPath, { recursive: true, force: true });
+    // await fsPromises.rm(folderPath, { recursive: true, force: true });
     console.log(`Đã xóa file: ${folderPath}`);
   } catch (err) {
     console.error('Error deleting file:', err);
@@ -78,7 +78,7 @@ function readExcelDataAsArray(buffer) {
 
 async function checkForSingleZipAndExcel(folderPath) {
   try {
-    const files = await fsExtra.readdir(folderPath); // Đọc danh sách các file trong thư mục
+    const files = await fsPromises.readdir(folderPath); // Đọc danh sách các file trong thư mục
 
     let zipFile = null;
     let excelFile = null;
@@ -86,7 +86,7 @@ async function checkForSingleZipAndExcel(folderPath) {
     // Duyệt qua các file để tìm file ZIP và file Excel
     for (const file of files) {
       const filePath = path.join(folderPath, file);
-      const stat = await fsExtra.stat(filePath);
+      const stat = await fsPromises.stat(filePath);
 
       // Kiểm tra nếu là file và định dạng của nó
       if (stat.isFile()) {

@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const uri = process.env.DATABASE || `mongodb://127.0.0.1:27017/demo`;
+const uri = process.env.DB_ITK;
 
 const connection = mongoose.createConnection(uri);
 

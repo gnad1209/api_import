@@ -7,9 +7,8 @@ const employeeSchema = new mongoose.Schema(
     departmentName: { type: String },
   },
   {
-    collection: 'employee',
     timestamps: true,
   }, // Lưu trữ trong collection 'results' và thêm timestamp tự động.
 );
 
-module.exports = conn.model('employee', employeeSchema);
+module.exports = conn.model('Employee', employeeSchema);

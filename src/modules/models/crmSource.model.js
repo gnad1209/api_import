@@ -48,9 +48,6 @@ const crmSchema = new mongoose.Schema(
       default: true,
     },
   },
-  {
-    collection: 'crm',
-  },
 );
 
-module.exports = conn.model('crm', crmSchema);
+module.exports = conn.model('CrmSource', crmSchema);
