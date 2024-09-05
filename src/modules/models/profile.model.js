@@ -1,4 +1,3 @@
-const { type } = require('os');
 const conn = require('../config/appConn');
 const mongoose = require('mongoose');
 

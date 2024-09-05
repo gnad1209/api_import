@@ -77,9 +77,10 @@ const importDataInZipFile = async (req, res, next) => {
       createdBy,
       code,
     );
+
     if (data.saveDocument.length < 1) {
       await deleteFolderAndContent(folderToSave);
-      return res.status(400).json(data);
+      return res.status(400).json(data.errors);
     }
     const document = service.selectFieldsDocument(data.saveDocument);
     // const files = service.selectFieldsFile(data.savedFiles);

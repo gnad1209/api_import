@@ -5,7 +5,7 @@ const importIncommingDocument = require('./importIncommingDocument.model');
 const Document = require('../models/document.model');
 const crm = require('../models/crmSource.model');
 const Employee = require('../models/employee.model');
-const organizationUnit = require('../models/organizationUnit.model');
+const signer = require('../models/signer.model');
 const fileManager = require('../models/fileManager.model');
 const Client = require('../models/client.model');
 const unzipper = require('unzipper');
@@ -21,6 +21,7 @@ const {
   deleteFolderAndContent,
   hasFileNameInArray,
 } = require('../config/common');
+const { default: mongoose } = require('mongoose');
 /**
  * Nhận thông tin file nén, giải nén file và lưu vào folder mong muốn
  * @param {Object} filePath path của file cần giải nén
@@ -236,6 +237,19 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         },
       });
 
+      if (rowData.signer) {
+        const dataSigner = await signer.findOne({ value: rowData.signer.trim() });
+
+        if (!dataSigner) {
+          const errorMessage = `Người ký của văn bản số ${i + 1} ko tồn tại`;
+          if (!allErrors.some((error) => error.message === errorMessage)) {
+            errorDocuments.push({ status: 400, message: errorMessage });
+          }
+          continue;
+        }
+        rowData.signer = { title: dataSigner.title, value: dataSigner.value };
+      }
+
       if (documentIncomming) {
         const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
         if (!allErrors.some((error) => error.message === errorMessage)) {
@@ -243,6 +257,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         }
         continue;
       }
+
       const arrFiles = rowData.files
         .trim()
         .split(',')
@@ -257,6 +272,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           }
           return true; // Giữ lại item nếu nó không trùng
         });
+
       allErrors.push(...errorsFile);
       const resultFile = await processAttachments(
         dataAttachments,
@@ -324,7 +340,7 @@ const extractRowData = (row) => {
   const receiveDate = row[12] || '';
   const toBookDate = row[13] || '';
   const deadLine = row[14] || '';
-
+  const signer = row[15] || '';
   return {
     toBook,
     abstractNote,
@@ -341,6 +357,7 @@ const extractRowData = (row) => {
     receiveDate,
     toBookDate,
     deadLine,
+    signer,
   };
 };
 
@@ -397,7 +414,7 @@ const validateRequiredFields = async (fields, rowNumber) => {
     if (!fields[field]) {
       resultErr.push({
         status: 400,
-        errors: [`${errorMessage} - dòng thứ ${rowNumber}`],
+        errors: `${errorMessage} - dòng thứ ${rowNumber}`,
       });
     }
   }
@@ -408,7 +425,7 @@ const validateRequiredFields = async (fields, rowNumber) => {
     if (validValues.length && !validValues.includes(value)) {
       resultErr.push({
         status: 400,
-        errors: [`Giá trị ${field} phải là một trong những loại cho trước - dòng thứ ${rowNumber}`],
+        errors: `Giá trị ${field} phải là một trong những loại cho trước - dòng thứ ${rowNumber}`,
       });
     }
   }
@@ -418,7 +435,7 @@ const validateRequiredFields = async (fields, rowNumber) => {
   if (!document) {
     resultErr.push({
       status: 400,
-      errors: [`Không tìm thấy văn bản đến - dòng thứ ${rowNumber}`],
+      errors: `Không tìm thấy văn bản đến - dòng thứ ${rowNumber}`,
     });
   }
 
@@ -567,9 +584,8 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
 const createDocument = (rowData, resultFile) => {
   const document = new importIncommingDocument({
     ...rowData,
-    files: resultFile.length >= 1 ? resultFile.map((item) => item._id) : null,
+    files: resultFile.length >= 1 ? resultFile.map((item) => ({ id: item._id, name: item.name })) : null,
   });
-
   return document;
 };
 
@@ -600,6 +616,7 @@ const selectFieldsDocument = (data) => {
       deadLine,
       kanbanStatus,
       createdBy,
+      signer,
     }) => ({
       toBook,
       abstractNote,
@@ -620,6 +637,7 @@ const selectFieldsDocument = (data) => {
       deadLine,
       kanbanStatus,
       createdBy,
+      signer,
     }),
   );
   return document;

@@ -14,7 +14,7 @@ const importIncommingDocumentSchema = new mongoose.Schema(
     toBookCode: { type: String },
     toBookCode_en: { type: String },
     senderUnit: { type: String },
-    files: [{ type: mongoose.Schema.Types.ObjectId, ref: 'fileManager' }],
+    files: [],
     senderUnit_en: { type: String },
     bookDocumentId: { type: String },
     secondBook: { type: String },
@@ -42,6 +42,7 @@ const importIncommingDocumentSchema = new mongoose.Schema(
     receiveDate: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
     toBookDate: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
     deadLine: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
+    signer: {},
   },
   {
     collection: 'importIncommingDocument',
