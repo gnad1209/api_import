@@ -5,6 +5,7 @@ const signerSchema = new mongoose.Schema(
   {
     title: { type: String },
     value: { type: String },
+    code: { type: String },
   },
   {
     collection: 'signer',

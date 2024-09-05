@@ -238,7 +238,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       });
 
       if (rowData.signer) {
-        const dataSigner = await signer.findOne({ value: rowData.signer.trim() });
+        const dataSigner = await signer.findOne({ code: rowData.signer.trim() });
 
         if (!dataSigner) {
           const errorMessage = `Người ký của văn bản số ${i + 1} ko tồn tại`;
@@ -250,13 +250,13 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         rowData.signer = { title: dataSigner.title, value: dataSigner.value };
       }
 
-      if (documentIncomming) {
-        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
-        if (!allErrors.some((error) => error.message === errorMessage)) {
-          errorDocuments.push({ status: 400, message: errorMessage });
-        }
-        continue;
-      }
+      // if (documentIncomming) {
+      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+      //   if (!allErrors.some((error) => error.message === errorMessage)) {
+      //     errorDocuments.push({ status: 400, message: errorMessage });
+      //   }
+      //   continue;
+      // }
 
       const arrFiles = rowData.files
         .trim()
@@ -367,80 +367,90 @@ const extractRowData = (row) => {
  * @throws {Error} Nếu thiếu bất kỳ trường bắt buộc nào.
  */
 const validateRequiredFields = async (fields, rowNumber) => {
-  let resultErr = [];
+  try {
+    let resultErr = [];
+    const requiredFields = {
+      toBook: 'Thiếu số văn bản - cột 1',
+      abstractNote: 'Thiếu trích yếu - cột 2',
+      senderUnit: 'Thiếu đơn vị gửi - cột 6',
+      documentDate: 'Thiếu ngày vb - cột 15',
+      receiveDate: 'Thiếu ngày nhận vb - cột 16',
+      toBookDate: 'Thiếu ngày vào sổ - cột 17',
+    };
 
-  const requiredFields = {
-    toBook: 'Thiếu số văn bản - cột 1',
-    abstractNote: 'Thiếu trích yếu - cột 2',
-    senderUnit: 'Thiếu đơn vị gửi - cột 6',
-    documentDate: 'Thiếu ngày vb - cột 15',
-    receiveDate: 'Thiếu ngày nhận vb - cột 16',
-    toBookDate: 'Thiếu ngày vào sổ - cột 17',
-  };
-
-  const dataCrm = await crm.find();
-  const validationRules = {
-    receiveMethod: [], // 27
-    urgencyLevel: [], // do khan
-    privateLevel: [],
-    documentType: [],
-    documentField: [],
-  };
-
-  dataCrm.forEach((element) => {
-    switch (element.code) {
-      case 'S27':
-        validationRules.receiveMethod = element.data.map((item) => item.value);
-        break;
-      case 'S20':
-        validationRules.urgencyLevel = element.data.map((item) => item.value);
-        break;
-      case 'S21':
-        validationRules.privateLevel = element.data.map((item) => item.value);
-        break;
-      case 'S19':
-        validationRules.documentType = element.data.map((item) => item.value);
-        break;
-      case 'S26':
-        validationRules.documentField = element.data.map((item) => item.value);
-        break;
-      default:
-        break;
+    // Kiểm tra các trường bắt buộc
+    for (const [field, errorMessage] of Object.entries(requiredFields)) {
+      if (!fields[field]) {
+        resultErr.push({
+          status: 400,
+          errors: [`${errorMessage} - dòng thứ ${rowNumber}`],
+        });
+      }
     }
-  });
 
-  // Kiểm tra các trường bắt buộc
-  for (const [field, errorMessage] of Object.entries(requiredFields)) {
-    if (!fields[field]) {
-      resultErr.push({
-        status: 400,
-        errors: `${errorMessage} - dòng thứ ${rowNumber}`,
-      });
-    }
-  }
+    const dataCrm = require('./crmSource.init');
+    const validationRules = {
+      receiveMethod: [], // 27
+      urgencyLevel: [], // do khan
+      privateLevel: [],
+      documentType: [],
+      documentField: [],
+    };
+    const fieldTitles = {}; // This will store the titles
 
-  // Kiểm tra các trường theo giá trị hợp lệ
-  for (const [field, validValues] of Object.entries(validationRules)) {
-    const value = fields[field] || '';
-    if (validValues.length && !validValues.includes(value)) {
-      resultErr.push({
-        status: 400,
-        errors: `Giá trị ${field} phải là một trong những loại cho trước - dòng thứ ${rowNumber}`,
-      });
-    }
-  }
-
-  // Kiểm tra document tồn tại
-  const document = await Document.findOne({ name: fields.toBookNumber });
-  if (!document) {
-    resultErr.push({
-      status: 400,
-      errors: `Không tìm thấy văn bản đến - dòng thứ ${rowNumber}`,
+    dataCrm.crmSource.forEach((element) => {
+      switch (element.code) {
+        case 'S27':
+          validationRules.receiveMethod = element.data.map((item) => item.value);
+          fieldTitles.receiveMethod = element.title;
+          break;
+        case 'S20':
+          validationRules.urgencyLevel = element.data.map((item) => item.value);
+          fieldTitles.urgencyLevel = element.title;
+          break;
+        case 'S21':
+          validationRules.privateLevel = element.data.map((item) => item.value);
+          fieldTitles.privateLevel = element.title;
+          break;
+        case 'S19':
+          validationRules.documentType = element.data.map((item) => item.value);
+          fieldTitles.documentType = element.title;
+          break;
+        case 'S26':
+          validationRules.documentField = element.data.map((item) => item.value);
+          fieldTitles.documentField = element.title;
+          break;
+        default:
+          break;
+      }
     });
-  }
 
-  // Trả về mảng lỗi nếu có
-  return resultErr;
+    // Kiểm tra các trường theo giá trị hợp lệ
+    for (const [field, validValues] of Object.entries(validationRules)) {
+      const value = fields[field] || '';
+      if (validValues.length && !validValues.includes(value)) {
+        // gán tên title
+        const fieldError = fieldTitles[field];
+        resultErr.push({
+          status: 400,
+          errors: [`Giá trị ${fieldError} phải là một trong những loại cho trước - dòng thứ ${rowNumber}`],
+        });
+      }
+    }
+
+    // Kiểm tra document tồn tại
+    const document = await Document.findOne({ name: fields.toBookNumber });
+    if (!document) {
+      resultErr.push({
+        status: 400,
+        errors: [`Không tìm thấy văn bản đến - dòng thứ ${rowNumber}`],
+      });
+    }
+    // Trả về mảng lỗi nếu có
+    return resultErr;
+  } catch (e) {
+    return e;
+  }
 };
 
 /**
