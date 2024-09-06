@@ -1,6 +1,8 @@
-const FileModel = require('./models/file.model');
 const Document = require('./models/document.model');
-const path = require('path');
+const Task = require('../models/task.model');
+const Employee = require('../models/employee.model');
+const OrganizationUnit = require('../models/organizationUnit.model');
+const IncommingDocument = require('../importIncommingDocument/importIncommingDocument.model');
 
 class DataProcessingService {
   /**
@@ -25,7 +27,7 @@ class DataProcessingService {
       }
       // bắt đầu xử lý
 
-      console.log('1 @@ bắt đầu xử lý', data);
+      console.log('6.1 @@ bắt đầu xử lý', data);
 
       for (const row of data) {
         if (row.rowIndex === 0) continue;
@@ -49,20 +51,28 @@ class DataProcessingService {
           // Tách phần tên file ra khỏi phần mở rộng
           const fileNameWithoutExtension = element.name.split('.')[0];
 
-          if (fileNameWithoutExtension == row.column15.split('.')[0]) {
+          if (fileNameWithoutExtension == row.column13.split('.')[0]) {
             fileMapping.attachment_file1 = element._id;
-          } else if (fileNameWithoutExtension == row.column16.split('.')[0]) {
+          } else if (fileNameWithoutExtension == row.column14.split('.')[0]) {
             fileMapping.attachment_file2 = element._id;
-          } else if (fileNameWithoutExtension == row.column17.split('.')[0]) {
+          } else if (fileNameWithoutExtension == row.column15.split('.')[0]) {
             fileMapping.attachment_file3 = element._id;
           }
         }
         console.log('fileMapping', fileMapping);
+        const column6Data = row.column6.split(',');
+        console.log('row.column6', column6Data);
+
+        // const data = await Task.find().lean();
+        // const data = await Employee.find().lean();
+        // const data = await OrganizationUnit.find().lean();
+        const data = await IncommingDocument.find().lean();
+        console.log(data);
 
         //tạo bản ghi văn bản mới từ file excel đọc được
         const outgoingDocumentToSave = new Document({
           senderUnit: row.column0 || '', // đơn vị soạn thảo
-          drafter: row.column1 || '', // người soạn thảo
+          drafter: row.column1 || '', // người soạn thảo || objId
           urgencyLevel: row.column2 || '', // độ khẩn
           privateLevel: row.column3 || '', // độ mật
           documentType: row.column4 || '', // loại văn bản
@@ -105,7 +115,7 @@ class DataProcessingService {
       return result;
     } catch (error) {
       console.log('Lỗi khi xử lý dữ liệu');
-      throw error;
+      throw error.message;
     }
   }
 }

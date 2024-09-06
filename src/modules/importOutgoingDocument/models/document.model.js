@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 // Định nghĩa schema cho Books
 const outgoingDocumentSchema = new mongoose.Schema(
   {
-    senderUnit: { type: String, required: true }, // Đơn vị soạn thảo
+    senderUnit: { type: mongoose.Schema.Types.ObjectId, ref: 'organizationUnit' }, // đơn vị soạn thảo
     drafter: {
       // người soạn thảo
       type: mongoose.Schema.Types.ObjectId,
@@ -19,7 +19,7 @@ const outgoingDocumentSchema = new mongoose.Schema(
     recipientsOutSystem: { type: String }, // nơi nhận ngoài hệ thống
     receiverUnit: { type: mongoose.Schema.Types.ObjectId, ref: 'organizationUnit' }, // đơn vị nhận
     abstractNote: { type: String, required: true }, // Trích yếu
-    incommingDocument: { type: mongoose.Schema.Types.ObjectId, ref: 'importIncommingDocument' }, //phúc đáp văn bản
+    incommingDocument: { type: mongoose.Schema.Types.ObjectId, ref: 'IncommingDocument' }, //phúc đáp văn bản
     tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'tasks' }], // Hồ sơ công việc
     files: [{ type: mongoose.Schema.Types.ObjectId, ref: 'fileManager' }], // file đính kèm ( file manager )
 
