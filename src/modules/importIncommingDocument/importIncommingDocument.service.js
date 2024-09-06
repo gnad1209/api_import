@@ -183,9 +183,12 @@ async function getDataFromExcelFile(filePath, check = false) {
 const processData = async (dataExcel, dataAttachments, folderToSave, clientId, username, code) => {
   try {
     const employee = await Employee.findOne({ username }).lean();
-    // if (!employee?.organizationUnit) {
-    //   return { status: 400, message: 'Lỗi không tìm thấy phòng ban' };
-    // }
+    if (!employee) {
+      return { status: 400, message: 'Người dùng không tồn tại' };
+    }
+    if (!employee.organizationUnit) {
+      return { status: 400, message: 'Lỗi không tìm thấy phòng ban' };
+    }
     if (!Array.isArray(dataExcel)) {
       return { status: 400, message: 'dataExcel không phải là một mảng' };
     }
@@ -205,8 +208,8 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       if (row.length === 0) continue;
       const rowData = extractRowData(row);
       rowData.kanbanStatus = 'receive';
-      // rowData.receiverUnit = employee?.organizationUnit?.organizationUnitId;
-      // rowData.createdBy = employee._id;
+      rowData.receiverUnit = employee?.organizationUnit?.organizationUnitId;
+      rowData.createdBy = employee._id;
 
       // Validate dữ liệu từ file excel
       const errors = await validateRequiredFields(rowData, i + 1);
@@ -235,7 +238,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       const duplicateInMemory = resultDocs.some((doc) => {
         return (
           doc.toBook === rowData.toBook &&
-          // doc.receiverUnit === employee.organizationUnit.organizationUnitId &&
+          doc.receiverUnit === employee.organizationUnit.organizationUnitId &&
           doc.senderUnit === rowData.senderUnit &&
           moment(doc.documentDate).isSame(moment(rowData.documentDate, 'DD/MM/YYYY'), 'day')
         );
@@ -255,7 +258,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           {
             status: 1,
             toBook: rowData.toBook,
-            // receiverUnit: employee.organizationUnit.organizationUnitId,
+            receiverUnit: employee.organizationUnit.organizationUnitId,
             senderUnit: rowData.senderUnit,
             documentDate: {
               $gte: moment(rowData.documentDate, 'DD/MM/YYYY').startOf('day').toDate(),
@@ -265,13 +268,13 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
-      // if (documentIncomming) {
-      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
-      //   if (!allErrors.some((error) => error.message === errorMessage)) {
-      //     errorDocuments.push({ status: 400, message: errorMessage });
-      //   }
-      //   continue;
-      // }
+      if (documentIncomming) {
+        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+        if (!allErrors.some((error) => error.message === errorMessage)) {
+          errorDocuments.push({ status: 400, message: errorMessage });
+        }
+        continue;
+      }
 
       // Trim từng item trước khi kiểm tra
       const arrFiles = rowData.files ? rowData.files.split(',').map((item) => item.trim()) : [];
@@ -282,8 +285,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         folderToSave,
         clientId,
         username,
-        // employee._id,
-        '66d6630a47130c1384eb5cb2',
+        employee._id,
         code,
       );
 
@@ -294,9 +296,10 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         if (!file.mid) {
           file.mid = document._id;
           await file.save();
-        } else {
+        } else if (document.files) {
+          document.files = document.files.filter((item) => item.name !== file.name);
           errorDocuments.push({ status: 400, message: `file đính kèm ${file.name} này đã tồn tại ở bản ghi khác` });
-          break;
+          continue;
         }
       }
       resultDocs.push(document);
@@ -452,14 +455,6 @@ const validateRequiredFields = async (fields, rowNumber) => {
       }
     }
 
-    // Kiểm tra document tồn tại
-    // const document = await Document.findOne({ name: fields.toBookNumber });
-    // if (!document) {
-    //   resultErr.push({
-    //     status: 400,
-    //     errors: [`Không tìm thấy văn bản đến - dòng thứ ${rowNumber}`],
-    //   });
-    // }
     // Trả về mảng lỗi nếu có
     return resultErr;
   } catch (e) {
@@ -644,7 +639,7 @@ const selectFieldsDocument = (data) => {
         senderUnit,
         bookDocumentId,
         secondBook,
-        // receiverUnit,
+        receiverUnit,
         documentType,
         documentField,
         receiveMethod,
@@ -664,7 +659,7 @@ const selectFieldsDocument = (data) => {
         senderUnit,
         bookDocumentId,
         secondBook,
-        // receiverUnit,
+        receiverUnit,
         documentType,
         documentField,
         receiveMethod,
