@@ -7,7 +7,7 @@ class ExcelService {
    * @returns {Promise<Object[]>} - Trả về mảng các đối tượng JSON tương ứng với các dòng trong tập tin Excel.
    * @throws {Error} - Ném lỗi nếu không tìm thấy file trong cơ sở dữ liệu hoặc lỗi khi đọc file Excel.
    */
-  static async getDataFromExcelFile(file) {
+  static async getDataFromExcelFileAndValidate(file, uploadedUnzipToUnZipFile) {
     try {
       // Đọc file .xlsx
       const workbook = xlsx.readFile(file.path);
@@ -24,27 +24,99 @@ class ExcelService {
       // Xác định số lượng cột tối đa trong sheet
       const maxColumns = Math.max(...jsonData.map((row) => row.length));
 
-      // Mảng để chứa dữ liệu đã chuyển đổi
+      // Mảng để chứa dữ liệu đã chuyển đổi và dữ liệu lỗi
       const Data = [];
+      const Errors = [];
 
       // Duyệt từng dòng, bắt đầu từ dòng thứ 2
       jsonData.forEach((row, rowIndex) => {
-        const rowData = { rowIndex: rowIndex + 2 }; // +2 để khớp với dòng trong Excel
+        // Kiểm tra nếu tất cả các cột trong dòng đều trống thì bỏ qua dòng này
+        const isEmptyRow = row.every((cell) => cell === undefined || cell === null || cell === '');
 
-        // Duyệt qua số lượng cột tối đa và đảm bảo rằng mỗi cột có giá trị hoặc là ''
-        for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
-          rowData[`column${columnIndex}`] =
-            row[columnIndex] !== undefined && row[columnIndex] !== null ? row[columnIndex] : '';
+        if (!isEmptyRow) {
+          const rowData = { rowIndex: rowIndex + 1 }; // +1 để khớp với dòng trong Excel
+          const rowErrors = [];
+
+          // Duyệt qua số lượng cột tối đa và đảm bảo rằng mỗi cột có giá trị hoặc là ''
+          for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
+            const cellValue = row[columnIndex] !== undefined && row[columnIndex] !== null ? row[columnIndex] : '';
+            rowData[`column${columnIndex}`] = cellValue;
+
+            // Validate dữ liệu
+            if (columnIndex === 0 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} đơn vị soạn thảo không được để trống`);
+            }
+            if (columnIndex === 1 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} người soạn thảo không được để trống`);
+            }
+            if (columnIndex === 2 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} độ khẩn không hợp lệ`);
+            }
+            if (columnIndex === 3 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} độ mật không hợp lệ`);
+            }
+            if (columnIndex === 4 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} loại văn bản không hợp lệ`);
+            }
+            if (columnIndex === 5 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} lĩnh vực không hợp lệ`);
+            }
+            if (columnIndex === 6 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} nơi nhận nội bộ không đúng`);
+            }
+            if (columnIndex === 7 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} người ký không đúng`);
+            }
+            if (columnIndex === 9 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} đơn vị nhận không đúng`);
+            }
+            if (columnIndex === 11 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} phúc đáp văn bản không đúng`);
+            }
+            if (columnIndex === 12 && cellValue.trim() === '') {
+              rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} hồ sơ công việc không đúng`);
+            }
+            if (columnIndex === 13 && isExcelFileInUnzippedFiles(cellValue, uploadedUnzipToUnZipFile)) {
+              rowErrors.push(
+                `Cột ${columnIndex + 1}, dòng ${rowIndex + 2} văn bản báo cáo không có trong tệp đính kèm`,
+              );
+            }
+            if (columnIndex === 14 && isExcelFileInUnzippedFiles(cellValue, uploadedUnzipToUnZipFile)) {
+              rowErrors.push(
+                `Cột ${columnIndex + 1}, dòng ${rowIndex + 2} văn bản dự thảo không có trong tệp đính kèm`,
+              );
+            }
+            if (columnIndex === 15 && isExcelFileInUnzippedFiles(cellValue, uploadedUnzipToUnZipFile)) {
+              rowErrors.push(
+                `Cột ${columnIndex + 1}, dòng ${rowIndex + 2} văn bản đính kèm không có trong tệp đính kèm`,
+              );
+            }
+          }
+
+          if (rowErrors.length > 0) {
+            Errors.push({ rowIndex: rowIndex + 1, errors: rowErrors });
+          } else {
+            Data.push(rowData);
+          }
         }
-
-        // Thêm dòng đã xử lý vào mảng Data
-        Data.push(rowData);
       });
 
-      return Data;
+      if (Errors.length > 0) {
+        return { status: 0, data: Errors };
+      }
+      return { status: 1, data: Data };
     } catch (error) {
-      console.log('Lỗi lấy dữ liệu từ file excel');
+      console.log('Lỗi lấy dữ liệu từ file excel:', error);
       throw error;
+    }
+
+    function isExcelFileInUnzippedFiles(excelNameFile, unZipNameFile) {
+      for (const element of unZipNameFile) {
+        if (excelNameFile == element.name) {
+          return false;
+        }
+      }
+      return true;
     }
   }
 }

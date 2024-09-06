@@ -70,8 +70,15 @@ const importimportOutgoingDocument = async (req, res, next) => {
         element.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' &&
         element.name === 'ds_van_ban.xlsx'
       ) {
-        const dataExcel = await ExcelService.getDataFromExcelFile(element);
-        excelData = dataExcel;
+        const dataExcel = await ExcelService.getDataFromExcelFileAndValidate(element,uploadedUnzipToUnZipFile);
+        if (dataExcel.status == 0) {
+          return res.status(400).json({
+            status: 0,
+            message: dataExcel.data,
+          });
+        } else {
+          excelData = dataExcel.data;
+        }
         break;
       }
     }
@@ -83,9 +90,11 @@ const importimportOutgoingDocument = async (req, res, next) => {
     }
 
     console.log('5 @@ đọc file excel thành công');
-    // console.log('excelData == ', excelData);/
-
     console.log('6 @@ validate thành công');
+    // console.log('excelData == ', excelData);
+
+    // return res.json({ status: 1, data: excelData });
+
 
     // Process data
     const data = await DataProcessingService.dataProcessing(

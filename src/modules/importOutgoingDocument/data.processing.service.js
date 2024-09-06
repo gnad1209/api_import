@@ -25,20 +25,22 @@ class DataProcessingService {
       }
       // bắt đầu xử lý
 
+      console.log('1 @@ bắt đầu xử lý', data);
+
       for (const row of data) {
         if (row.rowIndex === 0) continue;
 
         // refix - khi mà không ai để ý đến việc đặt tên file trên hệ thống; sửa tên file thành dạng thao tác được ☠☠
-        let plainName = removeVietnameseTones(row.column6.replace(/\s/g, ''));
-        const filenameToSet = plainName || ''; // tên file mong muốn đặt
+        // let plainName = removeVietnameseTones(row.column6.replace(/\s/g, ''));
+        // const filenameToSet = plainName || ''; // tên file mong muốn đặt
         // const filenameToSet = row.column6 || ''; // tên file mong muốn đặt
 
-        let saveFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${filenameToSet}`;
-        saveFilename = saveFilename.length > 255 ? saveFilename.substring(0, 255) : saveFilename;
+        // let saveFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${filenameToSet}`;
+        // saveFilename = saveFilename.length > 255 ? saveFilename.substring(0, 255) : saveFilename;
 
-        path.join(folderPath, 'initFilename');
-        path.join(__dirname, '..', '..', '..', 'uploads', defaultClientId, saveFilename);
-        path.join(folderPath, '..', saveFilename);
+        // path.join(folderPath, 'initFilename');
+        // path.join(__dirname, '..', '..', '..', 'uploads', defaultClientId, saveFilename);
+        // path.join(folderPath, '..', saveFilename);
 
         const fileMapping = {};
 
@@ -59,43 +61,38 @@ class DataProcessingService {
 
         //tạo bản ghi văn bản mới từ file excel đọc được
         const outgoingDocumentToSave = new Document({
-          toBook: row.column0 || 0,
-          abstractNote: row.column1 || '',
-          urgencyLevel: row.column2 || '',
-          senderUnit: row.column3 || '',
-          documentType: row.column4 || '',
-          releaseDate: row.column5 || '',
-          releaseNo: row.column6 || '',
-          documentField: row.column7 || '',
-          privateLevel: row.column8 || '',
-          currentNote: row.column9 || '',
-          importIncommingDocument: row.column10 || '',
-          tasks: row.column11 || '',
-          autoReleaseCheck: row.column12 || false,
-          caSignCheck: row.column13 || false,
-          currentRole: row.column14 || '',
-          attachment_file1: fileMapping.attachment_file1,
-          attachment_file2: fileMapping.attachment_file2,
-          attachment_file3: fileMapping.attachment_file3,
-          nextRole: row.column18 || '',
+          senderUnit: row.column0 || '', // đơn vị soạn thảo
+          drafter: row.column1 || '', // người soạn thảo
+          urgencyLevel: row.column2 || '', // độ khẩn
+          privateLevel: row.column3 || '', // độ mật
+          documentType: row.column4 || '', // loại văn bản
+          documentField: row.column5 || '', // lĩnh vực
+          viewers: row.column6 || '', // nơi nhận nội bộ || ar objId
+          signer: row.column7 || '', //người ký  || objId
+          recipientsOutSystem: row.column8 || '', // nơi nhận ngoài hệ thống
+          receiverUnit: row.column9 || '', // đơn vị nhận || objId
+          abstractNote: row.column10 || '', // trích yếu
+          incommingDocument: row.column11 || '', //phúc đáp văn bản || objId
+          tasks: row.column12 || '', // Hồ sơ công việc || ar objId
+          files: row.column13 || '', // file đính kèm ( file manager )  || ar objId
         });
 
         // Lưu bản ghi văn bản
         await outgoingDocumentToSave.save();
 
-        // Cập nhật các bản ghi file với id của bản ghi văn bản
-        await Promise.all(
-          uploadedUnzipToUnZipFile.map(async (file) => {
-            // Tìm bản ghi sách tương ứng dựa trên tên file và cập nhật
-            if (
-              file._id.equals(fileMapping.attachment_file1) ||
-              file._id.equals(fileMapping.attachment_file2) ||
-              file._id.equals(fileMapping.attachment_file3)
-            ) {
-              await FileModel.findByIdAndUpdate(file._id, { book: outgoingDocumentToSave._id });
-            }
-          }),
-        );
+        // Cập nhật các bản ghi filemanager với id của bản ghi văn bản
+        // await Promise.all(
+        //   uploadedUnzipToUnZipFile.map(async (file) => {
+        //     // Tìm bản ghi sách tương ứng dựa trên tên file và cập nhật
+        //     if (
+        //       file._id.equals(fileMapping.attachment_file1) ||
+        //       file._id.equals(fileMapping.attachment_file2) ||
+        //       file._id.equals(fileMapping.attachment_file3)
+        //     ) {
+        //       await FileModel.findByIdAndUpdate(file._id, { book: outgoingDocumentToSave._id });
+        //     }
+        //   }),
+        // );
 
         // console.log('Duong dan tai lieu da luu: ', fileToSave.fullPath);
         // console.log('document == document ', document);

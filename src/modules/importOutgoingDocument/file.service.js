@@ -114,7 +114,7 @@ class FileService {
       // Sao chép file đến thư mục mới
       await fsPromise.copyFile(compressedFilePath, newCompressedFilePath);
 
-      console.log('Thư mục lưu: ', folderToSave);
+      // console.log('Thư mục lưu: ', folderToSave);
       return folderToSave;
     } catch (error) {
       console.log('Lỗi khi thực hiện hàm tạo folder:', error);
