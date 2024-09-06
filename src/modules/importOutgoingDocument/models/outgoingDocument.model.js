@@ -15,7 +15,7 @@ const outgoingDocumentSchema = new mongoose.Schema(
     documentType: { type: String }, // Loại văn bản
     documentField: { type: String }, // Lĩnh vực
     viewers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'employee' }], //nơi nhận nội bộ
-    signer: { type: mongoose.Schema.Types.ObjectId, ref: 'employee' }, //người ký
+    signer: [{ type: mongoose.Schema.Types.ObjectId, ref: 'employee' }], //người ký (nhiều người ký)
     recipientsOutSystem: { type: String }, // nơi nhận ngoài hệ thống
     receiverUnit: { type: mongoose.Schema.Types.ObjectId, ref: 'organizationUnit' }, // đơn vị nhận
     abstractNote: { type: String, required: true }, // Trích yếu

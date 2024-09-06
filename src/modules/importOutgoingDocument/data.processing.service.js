@@ -1,8 +1,9 @@
-const Document = require('./models/document.model');
+const Document = require('./models/outgoingDocument.model');
 const Task = require('../models/task.model');
 const Employee = require('../models/employee.model');
 const OrganizationUnit = require('../models/organizationUnit.model');
 const IncommingDocument = require('../importIncommingDocument/importIncommingDocument.model');
+const { ObjectId } = require('mongodb');
 
 class DataProcessingService {
   /**
@@ -61,30 +62,32 @@ class DataProcessingService {
         }
         console.log('fileMapping', fileMapping);
         const column6Data = row.column6.split(',');
-        console.log('row.column6', column6Data);
+        const column7Data = row.column7.split(',');
+        const column12Data = row.column12.split(',');
+        // const column13Data = row.column13.split(',');
+        console.log(column6Data);
 
         // const data = await Task.find().lean();
         // const data = await Employee.find().lean();
         // const data = await OrganizationUnit.find().lean();
-        const data = await IncommingDocument.find().lean();
-        console.log(data);
+        // const data = await IncommingDocument.find().lean();
 
         //tạo bản ghi văn bản mới từ file excel đọc được
         const outgoingDocumentToSave = new Document({
           senderUnit: row.column0 || '', // đơn vị soạn thảo
-          drafter: row.column1 || '', // người soạn thảo || objId
+          drafter: row.column1 && ObjectId.isValid(row.column1) ? new ObjectId(row.column1) : '', // người soạn thảo || objId
           urgencyLevel: row.column2 || '', // độ khẩn
           privateLevel: row.column3 || '', // độ mật
           documentType: row.column4 || '', // loại văn bản
           documentField: row.column5 || '', // lĩnh vực
-          viewers: row.column6 || '', // nơi nhận nội bộ || ar objId
-          signer: row.column7 || '', //người ký  || objId
+          viewers: column6Data.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)) || '', // nơi nhận nội bộ || ar objId
+          signer: column7Data.length > 0 && ObjectId.isValid(column7Data[0]) ? new ObjectId(column7Data[0]) : null, //người ký
           recipientsOutSystem: row.column8 || '', // nơi nhận ngoài hệ thống
-          receiverUnit: row.column9 || '', // đơn vị nhận || objId
+          receiverUnit: row.column9 && ObjectId.isValid(row.column9) ? new ObjectId(row.column9) : '', // đơn vị nhận || objId
           abstractNote: row.column10 || '', // trích yếu
-          incommingDocument: row.column11 || '', //phúc đáp văn bản || objId
-          tasks: row.column12 || '', // Hồ sơ công việc || ar objId
-          files: row.column13 || '', // file đính kèm ( file manager )  || ar objId
+          incommingDocument: row.column11 && ObjectId.isValid(row.column11) ? new ObjectId(row.column11) : '', //phúc đáp văn bản || objId
+          tasks: column12Data.map((id) => (ObjectId.isValid(id) ? new ObjectId(id) : id)) || '', // Hồ sơ công việc || ar objId
+          // files: row.column13 || '', // file đính kèm ( file manager )  || ar objId
         });
 
         // Lưu bản ghi văn bản
