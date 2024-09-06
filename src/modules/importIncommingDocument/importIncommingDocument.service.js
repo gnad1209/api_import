@@ -182,7 +182,7 @@ async function getDataFromExcelFile(filePath, check = false) {
 const processData = async (dataExcel, dataAttachments, folderToSave, clientId, username, code) => {
   try {
     const employee = await Employee.findOne({ username }).lean();
-    if (!employee.organizationUnit) {
+    if (!employee?.organizationUnit) {
       return { status: 400, message: 'Lỗi ko tìm thấy phòng ban' };
     }
     if (!Array.isArray(dataExcel)) {
@@ -206,7 +206,8 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       if (row.length === 0) continue;
       const rowData = extractRowData(row);
       rowData.kanbanStatus = 'receive';
-      rowData.receiverUnit = employee.organizationUnit.organizationUnitId;
+      // rowData.receiverUnit = '66d6630a47130c1384eb5cb2';
+      rowData.receiverUnit = employee?.organizationUnit?.organizationUnitId;
       rowData.createdBy = employee._id;
 
       // Validate dữ liệu từ file excel
@@ -218,7 +219,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         rowData.deadLine,
         i + 1,
       );
-
       if (errors.length > 0 || errorsDate.length > 0) {
         allErrors.push(...errors, ...errorsDate); // Đẩy tất cả lỗi vào mảng lỗi chung
         continue; // Nếu có lỗi, bỏ qua dòng này và tiếp tục với dòng tiếp theo
@@ -248,7 +248,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           {
             status: 1,
             toBook: rowData.toBook,
-            receiverUnit: employee.organizationUnit.organizationUnitId,
+            // receiverUnit: employee.organizationUnit.organizationUnitId,
             senderUnit: rowData.senderUnit,
             documentDate: {
               $gte: moment(rowData.documentDate, 'DD/MM/YYYY').startOf('day').toDate(),
@@ -289,6 +289,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         clientId,
         username,
         employee._id,
+        // '66d6630a47130c1384eb5cb2',
         code,
       );
       allResultFiles.push(...resultFile);
@@ -297,12 +298,12 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
 
       // Cập nhật trường `mid` cho từng file với ID của tài liệu vừa lưu
       for (const file of resultFile) {
-        // if (!file.mid) {
-        //   file.mid = document._id;
-        // } else {
-        //   return { status: 400, message: `file đính kèm ${file.name} của vản bản có id ${file.mid}` };
-        // }
-        file.mid = document._id;
+        if (!file.mid) {
+          file.mid = document._id;
+        } else {
+          errorDocuments.push({ status: 400, message: `file đính kèm ${file.name} đã có của văn bản thứ ${i + 1}` });
+          break;
+        }
         await file.save();
       }
       resultDocs.push(document);
@@ -399,7 +400,7 @@ const validateRequiredFields = async (fields, rowNumber) => {
       .find(
         {
           code: {
-            $in: ['S27', 'S20', 'S21', 'S19', 'S26'],
+            $in: ['S27', 'S20', 'S21', 'S19', 'S26', 'nguoiki'],
           },
         },
         'code data',
@@ -414,9 +415,9 @@ const validateRequiredFields = async (fields, rowNumber) => {
       documentField: [],
       signer: [],
     };
-    const fieldTitles = {}; // This will store the titles
-
-    dataCrm.forEach((element) => {
+    const fieldTitles = {};
+    let a = [];
+    dataCrm.crmSource.forEach((element) => {
       switch (element.code) {
         case 'S27':
           validationRules.receiveMethod = element.data.map((item) => item.value);
@@ -451,10 +452,11 @@ const validateRequiredFields = async (fields, rowNumber) => {
       const value = fields[field] || '';
       if (validValues.length && !validValues.includes(value)) {
         // gán tên title
+        console.log(value);
         const fieldError = fieldTitles[field];
         resultErr.push({
           status: 400,
-          errors: [`Giá trị ${fieldError} phải là một trong những loại cho trước - dòng thứ ${rowNumber}`],
+          errors: [`Giá trị ${fieldError} phải là một trong những mã cho trước - dòng thứ ${rowNumber}`],
         });
       }
     }
@@ -497,43 +499,43 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadLine, rowNumbe
     const today = moment().format('YYYY/MM/DD');
 
     if (!moment(docDate, 'YYYY/MM/DD', true).isValid()) {
-      errors.push({ status: 400, message: `Ngày tài liệu (documentDate) không hợp lệ - dòng thứ ${rowNumber}` });
+      errors.push({ status: 400, message: `Ngày tài liệu không hợp lệ - dòng thứ ${rowNumber}` });
     }
     if (!moment(recDate, 'YYYY/MM/DD', true).isValid()) {
-      errors.push({ status: 400, message: `Ngày nhận (receiveDate) không hợp lệ - dòng thứ ${rowNumber}` });
+      errors.push({ status: 400, message: `Ngày nhận không hợp lệ - dòng thứ ${rowNumber}` });
     }
     if (!moment(toBkDate, 'YYYY/MM/DD', true).isValid()) {
-      errors.push({ status: 400, message: `Ngày gửi vào sổ (toBookDate) không hợp lệ - dòng thứ ${rowNumber}` });
+      errors.push({ status: 400, message: `Ngày gửi vào sổ không hợp lệ - dòng thứ ${rowNumber}` });
     }
     if (deadLine && !moment(dlDate, 'YYYY/MM/DD', true).isValid()) {
-      errors.push({ status: 400, message: `Hạn chót (deadLine) không hợp lệ - dòng thứ ${rowNumber}` });
+      errors.push({ status: 400, message: `Hạn chót không hợp lệ - dòng thứ ${rowNumber}` });
     }
 
     if (moment(docDate).isAfter(today)) {
       errors.push({
         status: 400,
-        message: `Ngày tài liệu (documentDate) không được lớn hơn ngày hiện tại - dòng thứ ${rowNumber}`,
+        message: `Ngày tài liệu không được lớn hơn ngày hiện tại - dòng thứ ${rowNumber}`,
       });
     }
 
     if (moment(recDate).isBefore(docDate)) {
       errors.push({
         status: 400,
-        message: `Ngày nhận (receiveDate) không được nhỏ hơn ngày tài liệu (documentDate) - dòng thứ ${rowNumber}`,
+        message: `Ngày nhận không được nhỏ hơn ngày tài liệu - dòng thứ ${rowNumber}`,
       });
     }
 
     if (moment(toBkDate).isBefore(docDate)) {
       errors.push({
         status: 400,
-        message: `Ngày gửi vào sổ (toBookDate) không được nhỏ hơn ngày tài liệu (documentDate) - dòng thứ ${rowNumber}`,
+        message: `Ngày gửi vào sổ không được nhỏ hơn ngày tài liệu - dòng thứ ${rowNumber}`,
       });
     }
 
     if (deadLine && moment(dlDate).isBefore(today)) {
       errors.push({
         status: 400,
-        message: `Hạn chót (deadLine) không được nhỏ hơn ngày hiện tại - dòng thứ ${rowNumber}`,
+        message: `Deadline  không được nhỏ hơn ngày hiện tại - dòng thứ ${rowNumber}`,
       });
     }
 

@@ -2,7 +2,6 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 const XLSX = require('xlsx');
 const path = require('path');
-const fsExtra = require('fs-extra');
 
 function removeVietnameseTones(str) {
   if (!str || typeof str !== 'string') return str;
@@ -37,7 +36,7 @@ function removeVietnameseTones(str) {
 // xóa folder trong project
 async function deleteFolderAndContent(folderPath) {
   try {
-    // await fsPromises.rm(folderPath, { recursive: true, force: true });
+    await fsPromises.unlink(folderPath, { recursive: true, force: true });
     console.log(`Đã xóa file: ${folderPath}`);
   } catch (err) {
     console.error('Error deleting file:', err);
