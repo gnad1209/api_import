@@ -6,34 +6,31 @@ const DataProcessingService = require('./data.processing.service');
 
 const importimportOutgoingDocument = async (req, res, next) => {
   try {
-    // kiểm tra file có hợp lệ ko ?
+    // kiểm tra có file ko ?
     let { zipFile } = req.files;
-    if (!zipFile || zipFile == null) {
+    if (!zipFile) {
       return res.status(400).json({
         status: 0,
-        message: 'Upload files failed',
+        message: 'không có zipFile',
       });
     }
 
-    // tính tổng dung lượng
-    const zipFile0 = zipFile[0];
-    const totalSize = zipFile0.size;
-
-    // lấy thông tin client từ query
+    // lấy thông tin client
     const processDataConfig = FileService.getProcessDataConfig(req.query);
 
     console.log('1 @@ lấy thông tin tu client thanh cong', processDataConfig);
 
     // kiểm tra dung lượng của client còn đủ không
-    if (processDataConfig.clientId) {
-      const storageCheckResult = await ClientService.checkStorageCapacity(processDataConfig.clientId, totalSize);
-      if (!storageCheckResult.success) {
-        return res.json({ status: 0, message: storageCheckResult.message });
-      }
-    }
-    console.log('2 @@ dung lượng đủ');
+    // if (processDataConfig.clientId) {
+    //   const storageCheckResult = await ClientService.checkStorageCapacity(processDataConfig.clientId, totalSize);
+    //   if (!storageCheckResult.success) {
+    //     return res.json({ status: 0, message: storageCheckResult.message });
+    //   }
+    // }
+    // console.log('2 @@ dung lượng đủ');
 
     // giải nén
+    const zipFile0 = zipFile[0];
     const unzipData = await UnZipService.extractZip(zipFile0.path, processDataConfig.clientId);
 
     // giải nén file zip đính kèm
@@ -62,7 +59,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
     );
 
     // tạo folder và lưu file
-    const folderSaveFiles = await FileService.createFolderAndSaveFiles(uploadedZipFile.toObject());
+    const folderSaveFiles = await FileService.createFolderAndSaveFiles(uploadedZipFile.toObject(), processDataConfig);
 
     console.log('4 @@ lưu folder xong');
 

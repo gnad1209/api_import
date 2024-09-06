@@ -18,7 +18,7 @@ class UnzipService {
 
       // Tạo đường dẫn thư mục để lưu file giải nén
       const time = new Date() * 1;
-      const folderToSave = path.join(__dirname, '..', 'uploads', 'unZip', `${defaultClientId}_${time}`);
+      const folderToSave = path.join(__dirname, '..','importOutgoingDocument', 'uploads', 'unZip', `${defaultClientId}_${time}`);
 
       // Kiểm tra và tạo thư mục nếu chưa tồn tại
       if (!fs.existsSync(folderToSave)) {

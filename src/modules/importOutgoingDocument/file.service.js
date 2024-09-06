@@ -82,28 +82,42 @@ class FileService {
       const defaultClientId = config.clientId ? config.clientId : process.env.CLIENT_KHOLS;
 
       const compressedFileName = compressedFile.filename;
-      const folderToSave = path.join(__dirname, '..', 'uploads', `${defaultClientId}`, `import_${time}`);
+      const folderToSave = path.join(
+        __dirname,
+        '..',
+        'importOutgoingDocument',
+        'uploads',
+        `${defaultClientId}`,
+        `import_${time}`,
+      );
       const firstUploadFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'files');
 
       const compressedFilePath = path.join(firstUploadFolder, compressedFileName);
       const newCompressedFilePath = path.join(folderToSave, compressedFile.name);
 
+      // Kiểm tra và tạo thư mục firstUploadFolder nếu chưa tồn tại
+      await fsPromise.mkdir(firstUploadFolder, { recursive: true });
+
+      // Kiểm tra và tạo thư mục folderToSave nếu chưa tồn tại
       await fsPromise.mkdir(folderToSave, { recursive: true });
-      if (
-        !(await fsPromise
-          .access(compressedFilePath)
-          .then(() => true)
-          .catch(() => false))
-      ) {
+
+      // Kiểm tra file có tồn tại hay không
+      const fileExists = await fsPromise
+        .access(compressedFilePath)
+        .then(() => true)
+        .catch(() => false);
+
+      if (!fileExists) {
         throw new Error(`File không tồn tại: ${compressedFilePath}`);
       }
 
+      // Sao chép file đến thư mục mới
       await fsPromise.copyFile(compressedFilePath, newCompressedFilePath);
 
       console.log('Thư mục lưu: ', folderToSave);
       return folderToSave;
     } catch (error) {
-      console.log('Lỗi khi thực hiện hàm tạo folder');
+      console.log('Lỗi khi thực hiện hàm tạo folder:', error);
       throw error;
     }
   }
