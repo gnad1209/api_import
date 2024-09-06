@@ -5,7 +5,6 @@ const moment = require('moment');
 const importIncommingDocumentSchema = new mongoose.Schema(
   {
     toBook: { type: String },
-    toBook_en: { type: String },
     abstractNote: { type: String },
     toBookNumber: { type: Number },
     urgencyLevel: { type: String },
@@ -38,6 +37,7 @@ const importIncommingDocumentSchema = new mongoose.Schema(
       type: Number,
       default: 1,
     },
+    signer: {},
   },
   {
     timestamps: true,
