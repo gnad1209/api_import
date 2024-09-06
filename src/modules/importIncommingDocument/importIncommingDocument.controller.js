@@ -5,8 +5,7 @@ const { deleteFolderAndContent } = require('../config/common');
 const importDataInZipFile = async (req, res, next) => {
   try {
     // khởi tạo biến lưu file zip,path file zip, clientId, folder lưu file sau khi giải nén
-    // const { file: zipFile } = req;
-    const zipFile = req.file;
+    const { file: zipFile } = req;
     const { clientId, userName } = req.query;
     // kiểm tra file được tải lên chưa
     if (!zipFile) return res.status(400).json({ status: 0, message: 'Tải file lên thất bại' });
