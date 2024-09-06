@@ -182,9 +182,9 @@ async function getDataFromExcelFile(filePath, check = false) {
 const processData = async (dataExcel, dataAttachments, folderToSave, clientId, username, code) => {
   try {
     const employee = await Employee.findOne({ username }).lean();
-    if (!employee?.organizationUnit) {
-      return { status: 400, message: 'Lỗi ko tìm thấy phòng ban' };
-    }
+    // if (!employee?.organizationUnit) {
+    //   return { status: 400, message: 'Lỗi ko tìm thấy phòng ban' };
+    // }
     if (!Array.isArray(dataExcel)) {
       return { status: 400, message: 'dataExcel không phải là một mảng' };
     }
@@ -206,9 +206,9 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       if (row.length === 0) continue;
       const rowData = extractRowData(row);
       rowData.kanbanStatus = 'receive';
-      // rowData.receiverUnit = '66d6630a47130c1384eb5cb2';
-      rowData.receiverUnit = employee?.organizationUnit?.organizationUnitId;
-      rowData.createdBy = employee._id;
+      rowData.receiverUnit = '66d6630a47130c1384eb5cb2';
+      // rowData.receiverUnit = employee?.organizationUnit?.organizationUnitId;
+      // rowData.createdBy = employee._id;
 
       // Validate dữ liệu từ file excel
       const errors = await validateRequiredFields(rowData, i + 1);
@@ -228,7 +228,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       const duplicateInMemory = resultDocs.some((doc) => {
         return (
           doc.toBook === rowData.toBook &&
-          doc.receiverUnit === employee.organizationUnit.organizationUnitId &&
+          // doc.receiverUnit === employee.organizationUnit.organizationUnitId &&
           doc.senderUnit === rowData.senderUnit &&
           moment(doc.documentDate).isSame(moment(rowData.documentDate, 'DD/MM/YYYY'), 'day')
         );
@@ -258,13 +258,13 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
-      if (documentIncomming) {
-        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
-        if (!allErrors.some((error) => error.message === errorMessage)) {
-          errorDocuments.push({ status: 400, message: errorMessage });
-        }
-        continue;
-      }
+      // if (documentIncomming) {
+      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+      //   if (!allErrors.some((error) => error.message === errorMessage)) {
+      //     errorDocuments.push({ status: 400, message: errorMessage });
+      //   }
+      //   continue;
+      // }
       // check bằng danh mục có sẵn
       // if (rowData.signer) {
       //   const dataSigner = await Employee.findOne({ code: rowData.signer.trim() }, '_id').lean();
@@ -288,8 +288,8 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         folderToSave,
         clientId,
         username,
-        employee._id,
-        // '66d6630a47130c1384eb5cb2',
+        // employee._id,
+        '66d6630a47130c1384eb5cb2',
         code,
       );
       allResultFiles.push(...resultFile);
@@ -396,17 +396,17 @@ const validateRequiredFields = async (fields, rowNumber) => {
       }
     }
 
-    const dataCrm = await crm
-      .find(
-        {
-          code: {
-            $in: ['S27', 'S20', 'S21', 'S19', 'S26', 'nguoiki'],
-          },
-        },
-        'code data',
-      )
-      .lean();
-    // const dataCrm = require('./crmSource.init');
+    // const dataCrm = await crm
+    //   .find(
+    //     {
+    //       code: {
+    //         $in: ['S27', 'S20', 'S21', 'S19', 'S26', 'nguoiki'],
+    //       },
+    //     },
+    //     'code data',
+    //   )
+    //   .lean();
+    const dataCrm = require('./crmSource.init');
     const validationRules = {
       receiveMethod: [], // 27
       urgencyLevel: [], // do khan
@@ -416,7 +416,6 @@ const validateRequiredFields = async (fields, rowNumber) => {
       signer: [],
     };
     const fieldTitles = {};
-    let a = [];
     dataCrm.crmSource.forEach((element) => {
       switch (element.code) {
         case 'S27':
@@ -452,7 +451,6 @@ const validateRequiredFields = async (fields, rowNumber) => {
       const value = fields[field] || '';
       if (validValues.length && !validValues.includes(value)) {
         // gán tên title
-        console.log(value);
         const fieldError = fieldTitles[field];
         resultErr.push({
           status: 400,
@@ -656,6 +654,7 @@ const selectFieldsDocument = (data) => {
         deadLine,
         kanbanStatus,
         createdBy,
+        signer,
       }) => ({
         toBook,
         abstractNote,
@@ -674,6 +673,7 @@ const selectFieldsDocument = (data) => {
         deadLine,
         kanbanStatus,
         createdBy,
+        signer,
       }),
     );
     return document;
