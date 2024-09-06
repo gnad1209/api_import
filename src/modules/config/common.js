@@ -126,13 +126,21 @@ async function checkForSingleZipAndExcel(folderPath) {
  * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
-function hasFileNameInArray(fileInfo, fileName, id) {
-  return fileInfo
-    .filter((file) => fileName.includes(file.name))
-    .map((file) => ({
-      ...file,
-      id_doc: id,
-    }));
+function hasFileNameInArray(fileInfo, fileName) {
+  try {
+    if (!fileName) {
+      return;
+    }
+    let arrFile = [];
+    fileInfo.map((item) => {
+      if (fileName.includes(item.name)) {
+        arrFile.push(item);
+      }
+    });
+    return arrFile;
+  } catch (e) {
+    return e;
+  }
 }
 
 module.exports = {

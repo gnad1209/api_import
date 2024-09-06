@@ -197,9 +197,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     }
 
     const resultDocs = [];
-    const allResultFiles = [];
     const allErrors = []; // Mảng chứa tất cả các lỗi
-    const errorsFile = [];
     const errorDocuments = [];
     // Lặp lấy dữ liệu của file excel
     for (let i = 0; i < dataExcel.length; i++) {
@@ -275,10 +273,9 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       //   continue;
       // }
 
-      const arrFiles = rowData.files ? rowData.files.trim().split(',') : [];
       // Trim từng item trước khi kiểm tra
+      const arrFiles = rowData.files ? rowData.files.split(',').map((item) => item.trim()) : [];
 
-      allErrors.push(...errorsFile);
       const resultFile = await processAttachments(
         dataAttachments,
         arrFiles,
@@ -289,7 +286,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         '66d6630a47130c1384eb5cb2',
         code,
       );
-      allResultFiles.push(...resultFile);
 
       const document = await createDocument(rowData, resultFile);
 
@@ -297,11 +293,11 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       for (const file of resultFile) {
         if (!file.mid) {
           file.mid = document._id;
+          await file.save();
         } else {
-          errorDocuments.push({ status: 400, message: `file đính kèm ${file.name} đã có của văn bản thứ ${i + 1}` });
+          errorDocuments.push({ status: 400, message: `file đính kèm ${file.name} này đã tồn tại ở bản ghi khác` });
           break;
         }
-        await file.save();
       }
       resultDocs.push(document);
     }
@@ -641,6 +637,7 @@ const selectFieldsDocument = (data) => {
     }
     const document = data.map(
       ({
+        files,
         toBook,
         abstractNote,
         urgencyLevel,
@@ -660,6 +657,7 @@ const selectFieldsDocument = (data) => {
         createdBy,
         signer,
       }) => ({
+        files,
         toBook,
         abstractNote,
         urgencyLevel,
