@@ -417,7 +417,7 @@ const validateRequiredFields = async (fields, rowNumber) => {
     };
     const fieldTitles = {};
     let a = [];
-    dataCrm.crmSource.forEach((element) => {
+    dataCrm.forEach((element) => {
       switch (element.code) {
         case 'S27':
           validationRules.receiveMethod = element.data.map((item) => item.value);
