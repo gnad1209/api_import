@@ -6,3 +6,5 @@ node_modules/
 
 src/modules/importOutgoingDocument/files
 src/modules/importOutgoingDocument/uploads
+src/modules/importOutgoingDocument/unZip
+src/modules/importOutgoingDocument/OutGoing

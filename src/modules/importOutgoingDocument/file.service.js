@@ -1,4 +1,5 @@
 const FileManager = require('../models/fileManager.model');
+const fs = require('fs');
 const path = require('path');
 const fsPromise = require('fs').promises;
 
@@ -65,10 +66,12 @@ class FileService {
    * @returns {Promise<string>} - Trả về đường dẫn thư mục nơi lưu trữ tập tin nén.
    * @throws {Error} - Ném lỗi nếu tập tin không tồn tại hoặc xảy ra lỗi khi tạo thư mục.
    */
-  static async createFolderAndSaveFiles(compressedFile, config = {}) {
+  static async createFolderAndSaveFiles(compressedFile) {
+
+    // console.log('compressedFile', compressedFile);
+    
     try {
       const time = new Date() * 1;
-      const defaultClientId = config.clientId ? config.clientId : process.env.CLIENT_KHOLS;
 
       const compressedFileName = compressedFile.name;
       const folderToSave = path.join(
@@ -76,10 +79,43 @@ class FileService {
         '..',
         'importOutgoingDocument',
         'uploads',
-        `${defaultClientId}`,
+        `OUTGOING`,
         `import_${time}`,
       );
       const firstUploadFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'files');
+
+      // // tạo đường dẫn lưu file văn bản báo cáo
+      // const folderToSaveVbbc = path.join(
+      //   __dirname,
+      //   '..',
+      //   'importOutgoingDocument',
+      //   'uploads',
+      //   'OutGoing',
+      //   `VANBANBAOCAO`,
+      // );
+      // // tạo đường dẫn lưu file văn bản dự thảo
+      // const folderToSaveVbdt = path.join(
+      //   __dirname,
+      //   '..',
+      //   'importOutgoingDocument',
+      //   'uploads',
+      //   'OutGoing',
+      //   `VANBANDUTHAO`,
+      // );
+      // // tạo đường dẫn lưu file văn bản đính kèm
+      // const folderToSaveVbdk = path.join(
+      //   __dirname,
+      //   '..',
+      //   'importOutgoingDocument',
+      //   'uploads',
+      //   'OutGoing',
+      //   `VANBANDINHKEM`,
+      // );
+      // if (!fs.existsSync(folderToSaveVbbc) || !fs.existsSync(folderToSaveVbdt) || !fs.existsSync(folderToSaveVbdk)) {
+      //   fs.mkdirSync(folderToSaveVbbc, { recursive: true });
+      //   fs.mkdirSync(folderToSaveVbdt, { recursive: true });
+      //   fs.mkdirSync(folderToSaveVbdk, { recursive: true });
+      // }
 
       const compressedFilePath = path.join(firstUploadFolder, compressedFileName);
       const newCompressedFilePath = path.join(folderToSave, compressedFile.name);

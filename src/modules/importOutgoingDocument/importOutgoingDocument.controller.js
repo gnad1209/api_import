@@ -32,13 +32,17 @@ const importimportOutgoingDocument = async (req, res, next) => {
     const zipFile0 = zipFile[0];
     const unzipData = await UnZipService.extractZip(zipFile0.path, processDataConfig.clientId);
 
-    console.log('23 @@ giải nên này', unzipData);
+    // console.log('23 @@ giải này', unzipData);
 
     // giải nén file zip đính kèm
     let attachmentData = [];
     for (const element of unzipData) {
       if (element.mimetype === 'application/zip' && element.name === 'thu_muc_file_dinh_kem.zip') {
-        const dataAttachment = await UnZipService.extractZip(element.path, processDataConfig.clientId);
+        const dataAttachment = await UnZipService.extractZip(
+          element.path,
+          processDataConfig.clientId,
+          (isPath = false),
+        );
         attachmentData = dataAttachment;
         break;
       }
@@ -81,6 +85,34 @@ const importimportOutgoingDocument = async (req, res, next) => {
       });
     }
 
+    // for (const element of excelData) {
+    //   console.log('===============');
+    //   console.log('excelData == ', element.column13);
+    //   console.log('excelData == ', element.column14);
+    //   console.log('excelData == ', element.column15);
+    // }
+
+    // giải nén file zip đính kèm và tạo đường dẫn liên kết folder
+    let attachmentDataV2 = [];
+    for (const element of unzipData) {
+      if (element.mimetype === 'application/zip' && element.name === 'thu_muc_file_dinh_kem.zip') {
+        const dataAttachment = await UnZipService.extractZipAndSaveToCorrectPath(
+          element.path,
+          processDataConfig.clientId,
+          excelData,
+        );
+        attachmentDataV2 = dataAttachment;
+        break;
+      }
+    }
+    if (attachmentData.length < 1) {
+      return res.status(400).json({
+        status: 0,
+        message: 'giải nén thu_muc_file_dinh_kem.zip thất bại',
+      });
+    }
+    console.log('attachmentDataV2', attachmentDataV2.length);
+
     // create bản ghi cho tất cả các file
     const [uploadedZipFile, uploadedUnZipFile, uploadedUnzipToUnZipFile] = await FileService.processAndSaveFiles(
       zipFile0,
@@ -93,45 +125,15 @@ const importimportOutgoingDocument = async (req, res, next) => {
     // console.log('uploadedUnzipToUnZipFile', uploadedUnzipToUnZipFile);
     console.log('3.1 @@ create bản ghi cho tất cả các file thành công');
 
+    // console.log(' element.path == ', unzipData);
+
     // tạo folder và lưu file
-    const folderSaveFiles = await FileService.createFolderAndSaveFiles(uploadedZipFile.toObject(), processDataConfig);
+    const folderSaveFiles = await FileService.createFolderAndSaveFiles(uploadedZipFile.toObject());
 
     console.log('4 @@ lưu folder xong');
 
-    // // đọc dữ liệu và validate từ file excel
-    // let excelData = [];
-    // for (const element of unzipData) {
-    //   if (
-    //     element.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' &&
-    //     element.name === 'ds_van_ban.xlsx'
-    //   ) {
-    //     const dataExcel = await ExcelService.getDataFromExcelFileAndValidate(element, attachmentData);
-    //     if (dataExcel.status == 0) {
-    //       return res.status(400).json({
-    //         status: 0,
-    //         message: dataExcel.data,
-    //       });
-    //     } else {
-    //       excelData = dataExcel.data;
-    //     }
-    //     break;
-    //   }
-    // }
-    // if (excelData.length < 1) {
-    //   return res.status(400).json({
-    //     status: 0,
-    //     message: 'đọc file excel thất bại',
-    //   });
-    // }
-
     console.log('5 @@ đọc file excel thành công');
     console.log('6 @@ validate thành công');
-    for (const element of excelData) {
-      // console.log('===============');
-      // console.log('excelData == ', element.column13);
-      // console.log('excelData == ', element.column14);
-      // console.log('excelData == ', element.column15);
-    }
 
     // return res.json({ status: 1, data: excelData });
 
