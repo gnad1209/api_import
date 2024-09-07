@@ -1,5 +1,4 @@
 const FileService = require('./file.service');
-const ClientService = require('./client.service');
 const ExcelService = require('./excel.service');
 const UnZipService = require('./unzip.service');
 const DataProcessingService = require('./data.processing.service');
@@ -33,6 +32,8 @@ const importimportOutgoingDocument = async (req, res, next) => {
     const zipFile0 = zipFile[0];
     const unzipData = await UnZipService.extractZip(zipFile0.path, processDataConfig.clientId);
 
+    console.log('23 @@ giải nên này', unzipData);
+
     // giải nén file zip đính kèm
     let attachmentData = [];
     for (const element of unzipData) {
@@ -50,27 +51,18 @@ const importimportOutgoingDocument = async (req, res, next) => {
     }
 
     console.log('3 @@ giải nén thành công');
+    // console.log('zipFile0', zipFile0);
+    // console.log('unzipData', unzipData);
+    // console.log('attachmentData', attachmentData);
 
-    // create bản ghi cho tất cả các file
-    const [uploadedZipFile, uploadedUnZipFile, uploadedUnzipToUnZipFile] = await FileService.processAndSaveFiles(
-      zipFile0,
-      unzipData,
-      attachmentData,
-    );
-
-    // tạo folder và lưu file
-    const folderSaveFiles = await FileService.createFolderAndSaveFiles(uploadedZipFile.toObject(), processDataConfig);
-
-    console.log('4 @@ lưu folder xong');
-
-    // lấy dữ liệu từ file excel
+    // đọc dữ liệu và validate từ file excel
     let excelData = [];
-    for (const element of uploadedUnZipFile) {
+    for (const element of unzipData) {
       if (
         element.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' &&
         element.name === 'ds_van_ban.xlsx'
       ) {
-        const dataExcel = await ExcelService.getDataFromExcelFileAndValidate(element,uploadedUnzipToUnZipFile);
+        const dataExcel = await ExcelService.getDataFromExcelFileAndValidate(element, attachmentData);
         if (dataExcel.status == 0) {
           return res.status(400).json({
             status: 0,
@@ -89,12 +81,59 @@ const importimportOutgoingDocument = async (req, res, next) => {
       });
     }
 
+    // create bản ghi cho tất cả các file
+    const [uploadedZipFile, uploadedUnZipFile, uploadedUnzipToUnZipFile] = await FileService.processAndSaveFiles(
+      zipFile0,
+      unzipData,
+      attachmentData,
+    );
+
+    // console.log('uploadedZipFile', uploadedZipFile);
+    // console.log('uploadedUnZipFile', uploadedUnZipFile);
+    // console.log('uploadedUnzipToUnZipFile', uploadedUnzipToUnZipFile);
+    console.log('3.1 @@ create bản ghi cho tất cả các file thành công');
+
+    // tạo folder và lưu file
+    const folderSaveFiles = await FileService.createFolderAndSaveFiles(uploadedZipFile.toObject(), processDataConfig);
+
+    console.log('4 @@ lưu folder xong');
+
+    // // đọc dữ liệu và validate từ file excel
+    // let excelData = [];
+    // for (const element of unzipData) {
+    //   if (
+    //     element.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' &&
+    //     element.name === 'ds_van_ban.xlsx'
+    //   ) {
+    //     const dataExcel = await ExcelService.getDataFromExcelFileAndValidate(element, attachmentData);
+    //     if (dataExcel.status == 0) {
+    //       return res.status(400).json({
+    //         status: 0,
+    //         message: dataExcel.data,
+    //       });
+    //     } else {
+    //       excelData = dataExcel.data;
+    //     }
+    //     break;
+    //   }
+    // }
+    // if (excelData.length < 1) {
+    //   return res.status(400).json({
+    //     status: 0,
+    //     message: 'đọc file excel thất bại',
+    //   });
+    // }
+
     console.log('5 @@ đọc file excel thành công');
     console.log('6 @@ validate thành công');
-    // console.log('excelData == ', excelData);
+    for (const element of excelData) {
+      // console.log('===============');
+      // console.log('excelData == ', element.column13);
+      // console.log('excelData == ', element.column14);
+      // console.log('excelData == ', element.column15);
+    }
 
     // return res.json({ status: 1, data: excelData });
-
 
     // Process data
     const data = await DataProcessingService.dataProcessing(

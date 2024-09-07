@@ -1,4 +1,4 @@
-const File = require('./models/file.model');
+const FileManager = require('../models/fileManager.model');
 const path = require('path');
 const fsPromise = require('fs').promises;
 
@@ -18,52 +18,41 @@ class FileService {
    * @param {Array<Object>} attachmentData - Mảng chứa thông tin các tệp tin đính kèm bổ sung.
    */
   static async processAndSaveFiles(zipFile, unzipData, attachmentData) {
-    // Khởi tạo mảng các đối tượng file cần tạo
+    const createFileObject = (file, isZip = false) => ({
+      name: file.filename || '',
+      fullPath: file.path || '',
+      mimetype: file.mimetype || '',
+
+      // file cứng
+      smartForm: '',
+      isFileSync: false,
+      folderChild: false,
+      isStarred: false,
+      isEncryption: false,
+      shares: [],
+      isConvert: false,
+      internalTextIds: [],
+      canDelete: true,
+      canEdit: true,
+      status: 1,
+      isApprove: false,
+      public: 0,
+      permissions: [],
+      users: [],
+      hasChild: false,
+    });
+
     const filesToCreate = [
-      {
-        name: zipFile.originalname,
-        filename: zipFile.filename,
-        path: zipFile.path,
-        size: zipFile.size,
-        mimetype: zipFile.mimetype,
-        field: zipFile.fieldname,
-        user: zipFile.user,
-      },
+      createFileObject(zipFile, true),
+      ...unzipData.map(createFileObject),
+      ...attachmentData.map(createFileObject),
     ];
 
-    unzipData.forEach((file) => {
-      filesToCreate.push({
-        name: file.name || '',
-        filename: file.filename || '',
-        path: file.path || '',
-        size: file.size || 0,
-        mimetype: file.mimetype || '',
-        field: '',
-      });
-    });
-    attachmentData.forEach((file) => {
-      filesToCreate.push({
-        name: file.name || '',
-        filename: file.filename || '',
-        path: file.path || '',
-        size: file.size || 0,
-        mimetype: file.mimetype || '',
-        field: '',
-      });
-    });
-
-    // Tạo các file trong cơ sở dữ liệu
     try {
-      const createdFiles = await File.create(filesToCreate);
-
-      // Trả về mảng với từng phần tử tương ứng
-      return [
-        createdFiles[0], // File zip
-        createdFiles.slice(1, 3), // File đầu tiên từ unzipData, trả về dưới dạng mảng
-        createdFiles.slice(3), // Các file còn lại từ unzipData và tất cả từ attachmentData
-      ];
+      const createdFiles = await FileManager.create(filesToCreate);
+      return [createdFiles[0], createdFiles.slice(1, 3), createdFiles.slice(3)];
     } catch (error) {
-      console.log('Lỗi khi thực hiện tạo bản ghi file');
+      console.error('Lỗi khi thực hiện tạo bản ghi file:', error);
       throw error;
     }
   }
@@ -81,7 +70,7 @@ class FileService {
       const time = new Date() * 1;
       const defaultClientId = config.clientId ? config.clientId : process.env.CLIENT_KHOLS;
 
-      const compressedFileName = compressedFile.filename;
+      const compressedFileName = compressedFile.name;
       const folderToSave = path.join(
         __dirname,
         '..',
@@ -108,7 +97,7 @@ class FileService {
         .catch(() => false);
 
       if (!fileExists) {
-        throw new Error(`File không tồn tại: ${compressedFilePath}`);
+        throw new Error(`FileManager không tồn tại: ${compressedFilePath}`);
       }
 
       // Sao chép file đến thư mục mới

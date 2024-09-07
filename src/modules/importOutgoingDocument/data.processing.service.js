@@ -28,7 +28,7 @@ class DataProcessingService {
       }
       // bắt đầu xử lý
 
-      console.log('6.1 @@ bắt đầu xử lý', data);
+      // console.log('6.1 @@ bắt đầu xử lý', data);
 
       for (const row of data) {
         if (row.rowIndex === 0) continue;
@@ -60,12 +60,12 @@ class DataProcessingService {
             fileMapping.attachment_file3 = element._id;
           }
         }
-        console.log('fileMapping', fileMapping);
+        // console.log('fileMapping', fileMapping);
         const column6Data = row.column6.split(',');
         const column7Data = row.column7.split(',');
         const column12Data = row.column12.split(',');
         // const column13Data = row.column13.split(',');
-        console.log(column6Data);
+        // console.log(column6Data);
 
         // const data = await Task.find().lean();
         // const data = await Employee.find().lean();
