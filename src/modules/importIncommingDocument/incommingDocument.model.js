@@ -2,7 +2,7 @@ const conn = require('../config/appConn');
 const mongoose = require('mongoose');
 const moment = require('moment');
 
-const importIncommingDocumentSchema = new mongoose.Schema(
+const incommingDocumentSchema = new mongoose.Schema(
   {
     toBook: { type: String },
     abstractNote: { type: String },
@@ -28,10 +28,10 @@ const importIncommingDocumentSchema = new mongoose.Schema(
       // ref: 'OrganizationUnit',
     },
     createdBy: { type: mongoose.Schema.Types.ObjectId },
-    documentDate: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
-    receiveDate: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
-    toBookDate: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
-    deadLine: { type: String, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD') },
+    documentDate: { type: Date, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD, h:mm:ss') },
+    receiveDate: { type: Date, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD, h:mm:ss') },
+    toBookDate: { type: Date, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD, h:mm:ss') },
+    deadLine: { type: Date, set: (date) => moment(date, 'DD/MM/YYYY').format('YYYY/MM/DD, h:mm:ss') },
     stage: String,
     status: {
       type: Number,
@@ -44,4 +44,4 @@ const importIncommingDocumentSchema = new mongoose.Schema(
   },
 );
 
-module.exports = conn.model('IncommingDocument', importIncommingDocumentSchema);
+module.exports = conn.model('IncommingDocument', incommingDocumentSchema);

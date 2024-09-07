@@ -36,7 +36,7 @@ function removeVietnameseTones(str) {
 // xóa folder trong project
 async function deleteFolderAndContent(folderPath) {
   try {
-    await fsPromises.unlink(folderPath, { recursive: true, force: true });
+    await fsPromises.rm(folderPath, { recursive: true, force: true });
     console.log(`Đã xóa file: ${folderPath}`);
   } catch (err) {
     console.error('Error deleting file:', err);

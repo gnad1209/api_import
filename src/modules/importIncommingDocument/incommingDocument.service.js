@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
-const importIncommingDocument = require('./importIncommingDocument.model');
+const incommingDocument = require('./incommingDocument.model');
 const Document = require('../models/document.model');
 const crm = require('../models/crmSource.model');
 const Employee = require('../models/employee.model');
@@ -180,9 +180,9 @@ async function getDataFromExcelFile(filePath, check = false) {
  * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
-const processData = async (dataExcel, dataAttachments, folderToSave, clientId, username, code) => {
+const processData = async (dataExcel, dataAttachments, folderToSave, clientId, userName, code) => {
   try {
-    const employee = await Employee.findOne({ username }).lean();
+    const employee = await Employee.findOne({ userName }).lean();
     if (!employee) {
       return { status: 400, message: 'Người dùng không tồn tại' };
     }
@@ -208,7 +208,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       if (row.length === 0) continue;
       const rowData = extractRowData(row);
       rowData.kanbanStatus = 'receive';
-      rowData.receiverUnit = employee?.organizationUnit?.organizationUnitId;
+      rowData.receiverUnit = employee.organizationUnit.organizationUnitId;
       rowData.createdBy = employee._id;
 
       // Validate dữ liệu từ file excel
@@ -253,7 +253,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       }
 
       // check trùng trong db
-      const documentIncomming = await importIncommingDocument
+      const documentIncomming = await incommingDocument
         .findOne(
           {
             status: 1,
@@ -268,13 +268,13 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
-      if (documentIncomming) {
-        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
-        if (!allErrors.some((error) => error.message === errorMessage)) {
-          errorDocuments.push({ status: 400, message: errorMessage });
-        }
-        continue;
-      }
+      // if (documentIncomming) {
+      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+      //   if (!allErrors.some((error) => error.message === errorMessage)) {
+      //     errorDocuments.push({ status: 400, message: errorMessage });
+      //   }
+      //   continue;
+      // }
 
       // Trim từng item trước khi kiểm tra
       const arrFiles = rowData.files ? rowData.files.split(',').map((item) => item.trim()) : [];
@@ -284,7 +284,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         arrFiles,
         folderToSave,
         clientId,
-        username,
+        userName,
         employee._id,
         code,
       );
@@ -298,7 +298,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           await file.save();
         } else if (document.files) {
           document.files = document.files.filter((item) => item.name !== file.name);
-          errorDocuments.push({ status: 400, message: `file đính kèm ${file.name} này đã tồn tại ở bản ghi khác` });
+          errorDocuments.push({ status: 100, message: `file đính kèm ${file.name} này đã tồn tại ở bản ghi khác` });
           continue;
         }
       }
@@ -306,7 +306,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     }
     allErrors.push(...errorDocuments);
     // Lưu tất cả các bản ghi mới từ file excel
-    const savedDocument = await importIncommingDocument.insertMany(resultDocs);
+    const savedDocument = await incommingDocument.insertMany(resultDocs);
     if (!savedDocument) {
       savedDocument = [];
     }
@@ -402,7 +402,7 @@ const validateRequiredFields = async (fields, rowNumber) => {
         'code data title',
       )
       .lean();
-    // const dataCrm = require('./crmSource.init');
+
     const validationRules = {
       receiveMethod: [], // 27
       urgencyLevel: [], // do khan
@@ -436,7 +436,7 @@ const validateRequiredFields = async (fields, rowNumber) => {
           break;
         case 'nguoiki':
           validationRules.signer = element.data.map((item) => item.value);
-          fieldTitles.signer = 'Người ký';
+          fieldTitles.signer = element.title ? element.title : 'Người ký';
           break;
         default:
           break;
@@ -537,13 +537,13 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadLine, rowNumbe
  * @param {Array} arrFiles - Mảng tên file cần xử lý.
  * @param {Array} folderToSave - Đường dẫn folder sau khi giải nén.
  * @param {Array} clientId - client Id.
- * @param {Array} username - tên người dùng import dữ liệu.
+ * @param {Array} userName - tên người dùng import dữ liệu.
  * @param {Array} createdBy - id người tạo bản ghi file.
  * @param {Array} code - Đại diện cho module upload file.
  * @returns {Promise<Array>} Mảng các đối tượng file đã được xử lý và lưu trữ.
  */
 
-const processAttachments = async (dataAttachments, arrFiles, folderToSave, clientId, username, createdBy, code) => {
+const processAttachments = async (dataAttachments, arrFiles, folderToSave, clientId, userName, createdBy, code) => {
   try {
     const resultFile = [];
 
@@ -560,7 +560,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
           existingFile = new fileManager({
             ...file,
             parentPath: folderToSave,
-            username: username,
+            username: userName,
             isFile: true,
             realName: `${folderToSave}/${file.name}`,
             clientId: clientId,
@@ -609,9 +609,10 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
  */
 const createDocument = (rowData, resultFile) => {
   try {
-    const document = new importIncommingDocument({
+    const document = new incommingDocument({
       ...rowData,
       stage: 'receive',
+
       files: resultFile.length >= 1 ? resultFile.map((item) => ({ id: item._id, name: item.name })) : null,
     });
     return document;
@@ -628,7 +629,7 @@ const createDocument = (rowData, resultFile) => {
 const selectFieldsDocument = (data) => {
   try {
     if (!data) {
-      return [];
+      return { status: 400, message: 'ko có data' };
     }
     const document = data.map(
       ({
@@ -679,6 +680,57 @@ const selectFieldsDocument = (data) => {
   }
 };
 
+const getDataDocument = async (filter) => {
+  try {
+    const documents = await incommingDocument
+      .find(
+        filter,
+        'toBook abstractNote urgencyLevel senderUnit files secondBook documentType documentField receiveMethod privateLevel documentDate receiveDate toBookDate deadLine signer',
+      )
+      .lean();
+    if (documents?.length < 1) {
+      return { status: 400, message: 'Không tìm thấy dữ liệu' };
+    }
+    let resultFile = [];
+    documents.map((document) => {
+      if (document.files) {
+        document.files.map((file) => {
+          resultFile.push(file.id);
+        });
+      }
+      document.files = document.files.map((file) => file.name).join(', ');
+      document.documentDate = moment(document.documentDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
+      document.receiveDate = moment(document.receiveDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
+      document.toBookDate = moment(document.toBookDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
+      document.deadLine = moment(document.deadLine, 'YYYY/MM/DD').format('DD/MM/YYYY');
+    });
+    return { documents, resultFile };
+  } catch (e) {
+    return e;
+  }
+};
+
+const getPathFile = async (ids, documents) => {
+  try {
+    const files = await fileManager.find({ _id: { $in: ids } }, 'mid name fullPath');
+    let arrPath = [];
+    files.map((file) => {
+      // đổi tên lỗi vc
+      arrPath.push(file.fullPath);
+      documents.map((document) => {
+        if (file.mid == document._id) {
+          console.log(123123);
+          file.name = document.toBook + file.name;
+          arrPath.push(file.name);
+        }
+      });
+    });
+    return arrPath;
+  } catch (e) {
+    return e;
+  }
+};
+
 module.exports = {
   unzipFile,
   getPathOfChildFileZip,
@@ -687,4 +739,6 @@ module.exports = {
   processData,
   checkStorage,
   selectFieldsDocument,
+  getDataDocument,
+  getPathFile,
 };

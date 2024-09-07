@@ -1,6 +1,7 @@
-const service = require('./importIncommingDocument.service');
+const service = require('./incommingDocument.service');
 const path = require('path');
 const { deleteFolderAndContent } = require('../config/common');
+const moment = require('moment');
 
 const importDataInZipFile = async (req, res, next) => {
   try {
@@ -71,4 +72,43 @@ const importDataInZipFile = async (req, res, next) => {
   }
 };
 
-module.exports = { importDataInZipFile };
+const exportDataInZipFile = async (req, res, next) => {
+  try {
+    const { receiverUnitInput, regexFilterInput, receiveDateInput, clientId } = req.query;
+    let filter = {
+      stage: 'receive',
+      receiverUnit: { $in: [receiverUnitInput] },
+      // parentDoc: { $exists: false },
+      $or: [
+        { abstractNote_en: { $regex: regexFilterInput || '', $options: 'i' } },
+        { toBookCode_en: { $regex: regexFilterInput || '', $options: 'i' } },
+        { abstractNote: { $regex: regexFilterInput || '', $options: 'i' } },
+        { toBookCode: { $regex: regexFilterInput || '', $options: 'i' } },
+      ],
+    };
+    if (receiveDateInput) {
+      filter.receiveDateInput = {
+        $gte: moment(receiveDateInput[0], 'DD/MM/YYYY').startOf('day').toDate(),
+        $lte: moment(receiveDateInput[1], 'DD/MM/YYYY').endOf('day').toDate(),
+      };
+    }
+    const documentFiles = await service.getDataDocument(filter);
+    if (!documentFiles.documents) {
+      return res.status(400).json('Không tìm thấy tài liệu cần export');
+    }
+
+    //chuyển trường thông tin sang file excel
+    let attachments;
+    if (!documentFiles.resultFile) {
+      attachments = null;
+    }
+    attachments = await service.getPathFile(documentFiles.resultFile, documentFiles.documents);
+    console.log(attachments);
+    const baseDir = path.join(__dirname, '..', '..');
+    return res.status(200).json(documentFiles);
+  } catch (e) {
+    return e;
+  }
+};
+
+module.exports = { importDataInZipFile, exportDataInZipFile };

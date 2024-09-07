@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const importIncommingDocumentCtrl = require('./importIncommingDocument.controller');
+const incommingDocumentCtrl = require('./incommingDocument.controller');
 
 const multer = require('multer');
 const storage = multer.diskStorage({
@@ -17,6 +17,7 @@ const upload = multer({
   limits: { fileSize: 1 * 1024 * 1024 * 1024 },
 });
 
-router.post('/import', upload.single('zipFile'), importIncommingDocumentCtrl.importDataInZipFile);
+router.post('/import', upload.single('zipFile'), incommingDocumentCtrl.importDataInZipFile);
+router.get('/export', incommingDocumentCtrl.exportDataInZipFile);
 
 module.exports = router;

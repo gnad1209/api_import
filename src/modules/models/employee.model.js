@@ -5,7 +5,10 @@ const employeeSchema = new mongoose.Schema(
   {
     username: { type: String },
     departmentName: { type: String },
-    organizationUnit: String,
+    organizationUnit: {
+      type: mongoose.Schema.Types.ObjectId,
+      // ref: 'OrganizationUnit',
+    },
   },
   {
     timestamps: true,
