@@ -2,6 +2,9 @@ const service = require('./incommingDocument.service');
 const path = require('path');
 const { deleteFolderAndContent } = require('../config/common');
 const moment = require('moment');
+const os = require('os');
+const fs = require('fs');
+const downloadsDir = path.join(os.homedir(), 'Downloads', 'multi-folders.zip');
 
 const importDataInZipFile = async (req, res, next) => {
   try {
@@ -102,11 +105,33 @@ const exportDataInZipFile = async (req, res, next) => {
     if (!documentFiles.resultFile) {
       attachments = null;
     }
+    //lấy file tên và path của các file đính kèm
     attachments = await service.getPathFile(documentFiles.resultFile, documentFiles.documents);
-    const outputFilePath = path.join(__dirname, '..', '..', 'files');
-    service.createExelFile(documentFiles.documents);
-    service.createZipFile(attachments, outputFilePath);
-    service.downloadFileZip();
+
+    const outputFilePath = path.join(__dirname, '..', '..', 'files', 'attachments.zip');
+    //tạo file excel
+    const pathExcel = await service.createExelFile(documentFiles.documents);
+
+    // service.createZipWithFilesAndExcel(attachments.arrPath, attachments.arrName, pathExcel, outputFilePath);
+    service.createZipWithFilesAndExcel(
+      [
+        'D:\\work\\src\\uploads\\DHVB_DEV\\import_1725794041178\\attachments\\test_tepdinhkem.xlsx',
+        'D:\\work\\src\\uploads\\DHVB_DEV\\import_1725793992855\\attachments\\test_tepdinhkem.xlsx',
+      ],
+      attachments.arrName,
+      pathExcel,
+      outputFilePath,
+    );
+    res.download(downloadsDir, 'multi-folders.zip', (err) => {
+      if (err) {
+        console.error('Error downloading file:', err);
+        res.status(500).send('An error occurred');
+      } else {
+        // Bước 4: Xóa file Excel và file ZIP sau khi tải về
+        deleteFiles(excelFilePath);
+      }
+    });
+    console.log(123123123);
     return res.status(200).json(documentFiles);
   } catch (e) {
     return e;

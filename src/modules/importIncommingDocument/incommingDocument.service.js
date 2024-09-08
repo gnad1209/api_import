@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const incommingDocument = require('./incommingDocument.model');
-const Document = require('../models/document.model');
+// const Document = require('../models/document.model');
 const crm = require('../models/crmSource.model');
 const Employee = require('../models/employee.model');
 const fileManager = require('../models/fileManager.model');
@@ -15,9 +15,6 @@ const xlsx = require('xlsx');
 const moment = require('moment');
 const ExcelJS = require('exceljs');
 const archiver = require('archiver');
-const os = require('os');
-
-const downloadsDir = path.join(os.homedir(), 'Downloads');
 
 const fakeValue = require('./fakeValue.json');
 const {
@@ -229,7 +226,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         allErrors.push(...errors, ...errorsDate); // Đẩy tất cả lỗi vào mảng lỗi chung
         continue; // Nếu có lỗi, bỏ qua dòng này và tiếp tục với dòng tiếp theo
       }
-      const senderUnit = await SenderUnit.findOne({ value: rowData.senderUnit, status: 1 });
+      const senderUnit = await SenderUnit.findOne({ value: rowData.senderUnit, status: 1 }, '_id').lean();
 
       if (!senderUnit) {
         const errorMessage = `Không tìm thấy đơn vị gửi ở bản ghi số ${i + 1}`;
@@ -238,7 +235,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         }
         continue;
       }
-
+      rowData.senderUnit = senderUnit;
       //check trùng trong file excel
       const duplicateInMemory = resultDocs.some((doc) => {
         return (
@@ -735,39 +732,6 @@ const getPathFile = async (ids, documents) => {
   }
 };
 
-const createZipFile = async (attachments, outputFilePath) => {
-  try {
-    const arrPath = attachments.arrPath;
-    const arrName = attachments.arrName;
-    return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(outputFilePath);
-      const zipArchive = archiver('zip', { zlib: { level: 9 } });
-
-      // Lắng nghe sự kiện kết thúc để xử lý sau khi nén xong
-      output.on('close', () => {
-        console.log(`Zipped ${zipArchive.pointer()} total bytes`);
-        resolve();
-      });
-
-      // Xử lý lỗi trong quá trình nén
-      zipArchive.on('error', (err) => {
-        reject(err);
-      });
-
-      zipArchive.pipe(output);
-
-      // Duyệt qua mảng folderPaths và nén các file từ từng thư mục
-      for (let i = 0; i < arrPath.length; i++) {
-        zipArchive.directory(arrPath[i], arrName[i]); // folderName là tên thư mục bên trong file ZIP
-      }
-      // Kết thúc quá trình nén
-      zipArchive.finalize();
-    });
-  } catch (e) {
-    return e;
-  }
-};
-
 const createExelFile = async (documents) => {
   try {
     const workbook = new ExcelJS.Workbook();
@@ -810,28 +774,46 @@ const createExelFile = async (documents) => {
     });
     const excelFilePath = path.join(__dirname, '..', '..', 'files', 'file.xlsx');
     await workbook.xlsx.writeFile(excelFilePath);
-    //646546454665654
+    return excelFilePath;
   } catch (e) {
     return e;
   }
 };
 
-const downloadFileZip = async () => {
+const createZipWithFilesAndExcel = async (arrPath, arrName, excelFilePath, outputFilePath) => {
   try {
-    if (fs.existsSync(zipFilePath)) {
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', `attachment; filename=${path.basename(zipFilePath)}`);
-      const fileStream = fs.createReadStream(zipFilePath);
-      fileStream.pipe(res);
+    return new Promise((resolve, reject) => {
+      const output = fs.createWriteStream(outputFilePath);
+      const archive = archiver('zip', { zlib: { level: 9 } });
 
-      // Xóa file sau khi gửi đi
-      fileStream.on('end', () => {
-        fs.unlinkSync(zipFilePath);
-        console.log(`${zipFilePath} was deleted after download.`);
+      archive.pipe(output);
+
+      // Duyệt qua các đường dẫn trong filePaths và nén chúng
+      arrPath.forEach((path, index) => {
+        const customName = arrName[index];
+
+        if (fs.lstatSync(path).isDirectory()) {
+          // Nén thư mục với tên tùy chỉnh
+          archive.directory(path, customName);
+        } else {
+          // Nén file với tên tùy chỉnh
+          archive.file(path, { name: customName });
+        }
       });
-    } else {
-      res.status(404).send('File not found');
-    }
+
+      // Nén thêm file Excel vào file ZIP
+      archive.file(excelFilePath, { name: 'file.xlsx' });
+
+      // Kết thúc quá trình nén
+      archive.finalize();
+
+      output.on('close', () => {
+        console.log(`Final zipped file created at ${outputFilePath}`);
+        resolve({ status: 200 });
+      });
+
+      archive.on('error', (err) => reject(err));
+    });
   } catch (e) {
     return e;
   }
@@ -848,6 +830,5 @@ module.exports = {
   getDataDocument,
   getPathFile,
   createExelFile,
-  createZipFile,
-  downloadFileZip,
+  createZipWithFilesAndExcel,
 };
