@@ -103,9 +103,10 @@ const exportDataInZipFile = async (req, res, next) => {
       attachments = null;
     }
     attachments = await service.getPathFile(documentFiles.resultFile, documentFiles.documents);
-    const baseDir = path.join(__dirname, '..', '..');
+    const outputFilePath = path.join(__dirname, '..', '..', 'files');
     service.createExelFile(documentFiles.documents);
-    service.createZipFile(attachments);
+    service.createZipFile(attachments, outputFilePath);
+    service.downloadFileZip();
     return res.status(200).json(documentFiles);
   } catch (e) {
     return e;

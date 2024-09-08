@@ -735,7 +735,7 @@ const getPathFile = async (ids, documents) => {
   }
 };
 
-const createZipFile = async (attachments) => {
+const createZipFile = async (attachments, outputFilePath) => {
   try {
     const arrPath = attachments.arrPath;
     const arrName = attachments.arrName;
