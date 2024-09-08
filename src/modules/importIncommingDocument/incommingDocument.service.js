@@ -13,6 +13,11 @@ const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
 const moment = require('moment');
+const ExcelJS = require('exceljs');
+const archiver = require('archiver');
+const os = require('os');
+
+const downloadsDir = path.join(os.homedir(), 'Downloads');
 
 const fakeValue = require('./fakeValue.json');
 const {
@@ -306,14 +311,14 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
     }
     allErrors.push(...errorDocuments);
     // Lưu tất cả các bản ghi mới từ file excel
-    const savedDocument = await incommingDocument.insertMany(resultDocs);
-    if (!savedDocument) {
-      savedDocument = [];
+    const documents = await incommingDocument.insertMany(resultDocs);
+    if (!documents) {
+      documents = [];
     }
     // Trả về những bản ghi mới từ file excel và file đính kèm
     const logErrors = allErrors.length > 0 ? allErrors : null;
 
-    return { saveDocument: savedDocument, errors: logErrors };
+    return { errors: logErrors, documents: documents };
   } catch (error) {
     console.log('ERRO222R: ', error);
     return error;
@@ -714,18 +719,119 @@ const getPathFile = async (ids, documents) => {
   try {
     const files = await fileManager.find({ _id: { $in: ids } }, 'mid name fullPath');
     let arrPath = [];
+    let arrName = [];
     files.map((file) => {
-      // đổi tên lỗi vc
       arrPath.push(file.fullPath);
       documents.map((document) => {
-        if (file.mid == document._id) {
-          console.log(123123);
-          file.name = document.toBook + file.name;
-          arrPath.push(file.name);
+        if (file.mid.toString() === document._id.toString()) {
+          const name = document.toBook + ' ' + file.name;
+          arrName.push(name);
         }
       });
     });
-    return arrPath;
+    return { arrPath, arrName };
+  } catch (e) {
+    return e;
+  }
+};
+
+const createZipFile = async (attachments) => {
+  try {
+    const arrPath = attachments.arrPath;
+    const arrName = attachments.arrName;
+    return new Promise((resolve, reject) => {
+      const output = fs.createWriteStream(outputFilePath);
+      const zipArchive = archiver('zip', { zlib: { level: 9 } });
+
+      // Lắng nghe sự kiện kết thúc để xử lý sau khi nén xong
+      output.on('close', () => {
+        console.log(`Zipped ${zipArchive.pointer()} total bytes`);
+        resolve();
+      });
+
+      // Xử lý lỗi trong quá trình nén
+      zipArchive.on('error', (err) => {
+        reject(err);
+      });
+
+      zipArchive.pipe(output);
+
+      // Duyệt qua mảng folderPaths và nén các file từ từng thư mục
+      for (let i = 0; i < arrPath.length; i++) {
+        zipArchive.directory(arrPath[i], arrName[i]); // folderName là tên thư mục bên trong file ZIP
+      }
+      // Kết thúc quá trình nén
+      zipArchive.finalize();
+    });
+  } catch (e) {
+    return e;
+  }
+};
+
+const createExelFile = async (documents) => {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet 1');
+    worksheet.columns = [
+      { header: 'Số văn bản(*)', key: 'toBook', width: 10 },
+      { header: 'Trích yếu', key: 'abstractNote', width: 30 },
+      { header: 'Độ khẩn', key: 'urgencyLevel', width: 10 },
+      { header: 'Đơn vị gửi', key: 'senderUnit', width: 10 },
+      { header: 'files', key: 'files', width: 10 },
+      { header: 'Sổ phụ', key: 'secondBook', width: 10 },
+      { header: 'Loại văn bản', key: 'documentType', width: 10 },
+      { header: 'Lĩnh vực', key: 'documentField', width: 10 },
+      { header: 'Phương thức nhận', key: 'receiveMethod', width: 10 },
+      { header: 'Độ mật', key: 'privateLevel', width: 10 },
+      { header: 'Ngày văn bản', key: 'documentDate', width: 10 },
+      { header: 'Ngày nhận văn bản', key: 'receiveDate', width: 10 },
+      { header: 'Ngày vào sổ', key: 'toBookDate', width: 10 },
+      { header: 'Hạn được giao', key: 'deadLine', width: 10 },
+      { header: 'Người ký', key: 'signer', width: 10 },
+    ];
+    documents.map((document) => {
+      worksheet.addRow({
+        toBook: document.toBook,
+        abstractNote: document.abstractNote,
+        urgencyLevel: document.urgencyLevel,
+        senderUnit: document.senderUnit,
+        files: document.files,
+        secondBook: document.secondBook,
+        documentType: document.documentType,
+        documentField: document.documentField,
+        receiveMethod: document.receiveMethod,
+        privateLevel: document.privateLevel,
+        documentDate: document.documentDate,
+        receiveDate: document.receiveDate,
+        toBookDate: document.toBookDate,
+        deadLine: document.deadLine,
+        signer: document.signer,
+      });
+    });
+    const excelFilePath = path.join(__dirname, '..', '..', 'files', 'file.xlsx');
+    await workbook.xlsx.writeFile(excelFilePath);
+    //646546454665654
+  } catch (e) {
+    return e;
+  }
+};
+
+const downloadFileZip = async () => {
+  try {
+    if (fs.existsSync(zipFilePath)) {
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename=${path.basename(zipFilePath)}`);
+      const fileStream = fs.createReadStream(zipFilePath);
+      fileStream.pipe(res);
+
+      // Xóa file sau khi gửi đi
+      fileStream.on('end', () => {
+        fs.unlinkSync(zipFilePath);
+        console.log(`${zipFilePath} was deleted after download.`);
+      });
+    } else {
+      res.status(404).send('File not found');
+    }
   } catch (e) {
     return e;
   }
@@ -741,4 +847,7 @@ module.exports = {
   selectFieldsDocument,
   getDataDocument,
   getPathFile,
+  createExelFile,
+  createZipFile,
+  downloadFileZip,
 };

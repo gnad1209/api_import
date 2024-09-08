@@ -64,8 +64,8 @@ const importDataInZipFile = async (req, res, next) => {
       await deleteFolderAndContent(folderToSave);
       return res.status(400).json(data);
     }
-    const document = service.selectFieldsDocument(data.saveDocument);
-    return res.status(200).json({ checkWarning: data.errors, data: document });
+
+    return res.status(200).json({ errors: data.errors, documents: data.documents });
   } catch (e) {
     console.log('ERROR: ', e);
     return res.status(400).json(e);
@@ -103,8 +103,9 @@ const exportDataInZipFile = async (req, res, next) => {
       attachments = null;
     }
     attachments = await service.getPathFile(documentFiles.resultFile, documentFiles.documents);
-    console.log(attachments);
     const baseDir = path.join(__dirname, '..', '..');
+    service.createExelFile(documentFiles.documents);
+    service.createZipFile(attachments);
     return res.status(200).json(documentFiles);
   } catch (e) {
     return e;
