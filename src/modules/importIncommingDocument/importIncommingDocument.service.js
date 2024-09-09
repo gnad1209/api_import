@@ -226,15 +226,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         allErrors.push(...errors, ...errorsDate); // Đẩy tất cả lỗi vào mảng lỗi chung
         continue; // Nếu có lỗi, bỏ qua dòng này và tiếp tục với dòng tiếp theo
       }
-      const senderUnit = await SenderUnit.findOne({ value: rowData.senderUnit, status: 1 }, '_id').lean();
-
-      if (!senderUnit) {
-        const errorMessage = `Không tìm thấy đơn vị gửi ở bản ghi số ${i + 1}`;
-        if (!allErrors.some((error) => error.message === errorMessage)) {
-          errorDocuments.push({ status: 400, message: errorMessage });
-        }
-        continue;
-      }
 
       //check trùng trong file excel
       const duplicateInMemory = resultDocs.some((doc) => {
@@ -270,8 +261,24 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
-      if (documentIncomming) {
-        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+      // if (documentIncomming) {
+      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+      //   if (!allErrors.some((error) => error.message === errorMessage)) {
+      //     errorDocuments.push({ status: 400, message: errorMessage });
+      //   }
+      //   continue;
+      // }
+
+      const senderUnit = await SenderUnit.findOne({ value: rowData.senderUnit, status: 1 }, '_id').lean();
+
+      const signer = await crm.findOne({ code: 'nguoiki' }, '_id data');
+      signer.data.map((item) => {
+        if (item.value === rowData.signer) {
+          rowData.signer = { id: item._id, name: item.title };
+        }
+      });
+      if (!senderUnit) {
+        const errorMessage = `Không tìm thấy đơn vị gửi ở bản ghi số ${i + 1}`;
         if (!allErrors.some((error) => error.message === errorMessage)) {
           errorDocuments.push({ status: 400, message: errorMessage });
         }
@@ -614,7 +621,6 @@ const createDocument = (rowData, resultFile) => {
     const document = new incommingDocument({
       ...rowData,
       stage: 'receive',
-
       files: resultFile.length >= 1 ? resultFile.map((item) => ({ id: item._id, name: item.name })) : null,
     });
     return document;
@@ -623,64 +629,13 @@ const createDocument = (rowData, resultFile) => {
   }
 };
 
-/**
- * chọn các trường từ bản ghi vừa được tạo
- * @param {Object} data - Dữ liệu bản ghi
- * @returns {Object} Đối tượng document mới.
- */
-const selectFieldsDocument = (data) => {
-  try {
-    if (!data) {
-      return { status: 400, message: 'ko có data' };
-    }
-    const document = data.map(
-      ({
-        files,
-        toBook,
-        abstractNote,
-        urgencyLevel,
-        senderUnit,
-        bookDocumentId,
-        secondBook,
-        receiverUnit,
-        documentType,
-        documentField,
-        receiveMethod,
-        privateLevel,
-        documentDate,
-        receiveDate,
-        toBookDate,
-        deadLine,
-        kanbanStatus,
-        createdBy,
-        signer,
-      }) => ({
-        files,
-        toBook,
-        abstractNote,
-        urgencyLevel,
-        senderUnit,
-        bookDocumentId,
-        secondBook,
-        receiverUnit,
-        documentType,
-        documentField,
-        receiveMethod,
-        privateLevel,
-        documentDate,
-        receiveDate,
-        toBookDate,
-        deadLine,
-        kanbanStatus,
-        createdBy,
-        signer,
-      }),
-    );
-    return document;
-  } catch (e) {
-    return e;
-  }
-};
+// const convertData = () => {
+//   try {
+
+//   } catch (e) {
+//     return e;
+//   }
+// };
 
 module.exports = {
   unzipFile,
@@ -689,5 +644,4 @@ module.exports = {
   getDataFromExcelFile,
   processData,
   checkStorage,
-  selectFieldsDocument,
 };

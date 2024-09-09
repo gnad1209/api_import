@@ -9,8 +9,12 @@ const moment = require('moment');
 const ExcelJS = require('exceljs');
 const archiver = require('archiver');
 
-const { deleteFolderAndContent } = require('../config/common');
-
+/**
+ * Lọc điều kiện tìm kiếm hn
+ * @param {Object} filter Mảng dữ liệu đọc từ excel
+ * @param {*} config Cấu hình tùy chọn
+ * @returns trả về những bản ghi mới từ file excel
+ */
 const getDataDocument = async (filter) => {
   try {
     const documents = await incommingDocument
@@ -26,11 +30,12 @@ const getDataDocument = async (filter) => {
     documents.map((document) => {
       if (!document.files) {
         document.files = null;
+      } else {
+        document.files.map((file) => {
+          resultFile.push(file.id);
+        });
+        document.files = document.files.map((file) => file.name).join(', ');
       }
-      document.files.map((file) => {
-        resultFile.push(file.id);
-      });
-      document.files = document.files.map((file) => file.name).join(', ');
       document.documentDate = moment(document.documentDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.receiveDate = moment(document.receiveDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.toBookDate = moment(document.toBookDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
@@ -42,6 +47,13 @@ const getDataDocument = async (filter) => {
   }
 };
 
+/**
+ * Xử lý dữ liệu tạo các bản ghi mới trong bảng document và file
+ * @param {Array} dataExcel Mảng dữ liệu đọc từ excel
+ * @param {Array} dataAttachments Mảng dữ liệu đọc từ file zip đính kèm
+ * @param {*} config Cấu hình tùy chọn
+ * @returns trả về những bản ghi mới từ file excel
+ */
 const getPathFile = async (ids, documents) => {
   try {
     const files = await fileManager.find({ _id: { $in: ids } }, 'mid name fullPath');
@@ -62,6 +74,13 @@ const getPathFile = async (ids, documents) => {
   }
 };
 
+/**
+ * Xử lý dữ liệu tạo các bản ghi mới trong bảng document và file
+ * @param {Array} dataExcel Mảng dữ liệu đọc từ excel
+ * @param {Array} dataAttachments Mảng dữ liệu đọc từ file zip đính kèm
+ * @param {*} config Cấu hình tùy chọn
+ * @returns trả về những bản ghi mới từ file excel
+ */
 const createExelFile = async (documents) => {
   try {
     const workbook = new ExcelJS.Workbook();
@@ -70,17 +89,17 @@ const createExelFile = async (documents) => {
       { header: 'Số văn bản(*)', key: 'toBook', width: 10 },
       { header: 'Trích yếu', key: 'abstractNote', width: 30 },
       { header: 'Độ khẩn', key: 'urgencyLevel', width: 10 },
-      { header: 'Đơn vị gửi', key: 'senderUnit', width: 10 },
+      { header: 'Đơn vị gửi', key: 'senderUnit', width: 15 },
       { header: 'files', key: 'files', width: 10 },
       { header: 'Sổ phụ', key: 'secondBook', width: 10 },
       { header: 'Loại văn bản', key: 'documentType', width: 10 },
       { header: 'Lĩnh vực', key: 'documentField', width: 10 },
       { header: 'Phương thức nhận', key: 'receiveMethod', width: 10 },
       { header: 'Độ mật', key: 'privateLevel', width: 10 },
-      { header: 'Ngày văn bản', key: 'documentDate', width: 10 },
-      { header: 'Ngày nhận văn bản', key: 'receiveDate', width: 10 },
-      { header: 'Ngày vào sổ', key: 'toBookDate', width: 10 },
-      { header: 'Hạn được giao', key: 'deadLine', width: 10 },
+      { header: 'Ngày văn bản', key: 'documentDate', width: 15 },
+      { header: 'Ngày nhận văn bản', key: 'receiveDate', width: 15 },
+      { header: 'Ngày vào sổ', key: 'toBookDate', width: 15 },
+      { header: 'Hạn được giao', key: 'deadLine', width: 15 },
       { header: 'Người ký', key: 'signer', width: 10 },
     ];
     documents.map((document) => {
@@ -110,6 +129,13 @@ const createExelFile = async (documents) => {
   }
 };
 
+/**
+ * Xử lý dữ liệu tạo các bản ghi mới trong bảng document và file
+ * @param {Array} dataExcel Mảng dữ liệu đọc từ excel
+ * @param {Array} dataAttachments Mảng dữ liệu đọc từ file zip đính kèm
+ * @param {*} config Cấu hình tùy chọn
+ * @returns trả về những bản ghi mới từ file excel
+ */
 const createZipFile = async (arrPath, arrName, outputFilePath) => {
   try {
     return new Promise((resolve, reject) => {
@@ -121,7 +147,7 @@ const createZipFile = async (arrPath, arrName, outputFilePath) => {
       // Lắng nghe sự kiện khi tạo tệp ZIP hoàn thành
       output.on('close', () => {
         console.log(`Tạo file zip thành công: ${archive.pointer()} tổng số byte`);
-        resolve();
+        resolve({ status: 200 });
       });
       // Lắng nghe sự kiện lỗi
       archive.on('error', (err) => {
@@ -139,7 +165,6 @@ const createZipFile = async (arrPath, arrName, outputFilePath) => {
         } else {
           fileName = arrName[index] + '_' + index;
         }
-        console.log(fileName);
         archive.file(filePath, { name: fileName });
       });
 
