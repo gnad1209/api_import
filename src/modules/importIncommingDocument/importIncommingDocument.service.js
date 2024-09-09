@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
-const incommingDocument = require('./incommingDocument.model');
+const incommingDocument = require('../models/incommingDocument.model');
 // const Document = require('../models/document.model');
 const crm = require('../models/crmSource.model');
 const Employee = require('../models/employee.model');
@@ -235,7 +235,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         }
         continue;
       }
-      rowData.senderUnit = senderUnit;
+
       //check trùng trong file excel
       const duplicateInMemory = resultDocs.some((doc) => {
         return (
@@ -270,13 +270,13 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
-      // if (documentIncomming) {
-      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
-      //   if (!allErrors.some((error) => error.message === errorMessage)) {
-      //     errorDocuments.push({ status: 400, message: errorMessage });
-      //   }
-      //   continue;
-      // }
+      if (documentIncomming) {
+        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+        if (!allErrors.some((error) => error.message === errorMessage)) {
+          errorDocuments.push({ status: 400, message: errorMessage });
+        }
+        continue;
+      }
 
       // Trim từng item trước khi kiểm tra
       const arrFiles = rowData.files ? rowData.files.split(',').map((item) => item.trim()) : [];
@@ -780,39 +780,39 @@ const createExelFile = async (documents) => {
   }
 };
 
-const createZipWithFilesAndExcel = async (arrPath, arrName, excelFilePath, outputFilePath) => {
+const createZipWithFilesAndExcel = async (arrPath, arrName, outputFilePath) => {
   try {
     return new Promise((resolve, reject) => {
       const output = fs.createWriteStream(outputFilePath);
-      const archive = archiver('zip', { zlib: { level: 9 } });
-
-      archive.pipe(output);
-
-      // Duyệt qua các đường dẫn trong filePaths và nén chúng
-      arrPath.forEach((path, index) => {
-        const customName = arrName[index];
-
-        if (fs.lstatSync(path).isDirectory()) {
-          // Nén thư mục với tên tùy chỉnh
-          archive.directory(path, customName);
-        } else {
-          // Nén file với tên tùy chỉnh
-          archive.file(path, { name: customName });
-        }
+      const archive = archiver('zip', {
+        zlib: { level: 9 }, // set compression level to the highest
       });
 
-      // Nén thêm file Excel vào file ZIP
-      archive.file(excelFilePath, { name: 'file.xlsx' });
+      // Lắng nghe sự kiện khi tạo tệp ZIP hoàn thành
+      output.on('close', () => {
+        console.log(`Tạo file zip thành công: ${archive.pointer()} tổng số byte`);
+        resolve();
+      });
+
+      // Lắng nghe sự kiện lỗi
+      archive.on('error', (err) => {
+        reject(err);
+      });
+
+      // Bắt đầu nén file
+      archive.pipe(output);
+
+      // Thêm từng file vào archive
+      arrPath.forEach((path) => {
+        console.log(path);
+        let i = 0;
+        const fileName = arrName[i]; // Lấy tên tệp từ đường dẫn
+        archive.file(path, { name: fileName });
+        i++;
+      });
 
       // Kết thúc quá trình nén
       archive.finalize();
-
-      output.on('close', () => {
-        console.log(`Final zipped file created at ${outputFilePath}`);
-        resolve({ status: 200 });
-      });
-
-      archive.on('error', (err) => reject(err));
     });
   } catch (e) {
     return e;

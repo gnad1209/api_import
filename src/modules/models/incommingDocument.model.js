@@ -9,7 +9,7 @@ const incommingDocumentSchema = new mongoose.Schema(
     toBookNumber: { type: Number },
     urgencyLevel: { type: String },
     toBookCode: { type: String },
-    senderUnit: { type: mongoose.Schema.Types.ObjectId },
+    senderUnit: { type: String },
     files: [],
     bookDocumentId: { type: mongoose.Schema.Types.ObjectId },
     secondBook: { type: String },

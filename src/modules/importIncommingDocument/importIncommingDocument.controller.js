@@ -1,10 +1,6 @@
-const service = require('./incommingDocument.service');
+const service = require('./importIncommingDocument.service');
 const path = require('path');
 const { deleteFolderAndContent } = require('../config/common');
-const moment = require('moment');
-const os = require('os');
-const fs = require('fs');
-const downloadsDir = path.join(os.homedir(), 'Downloads', 'multi-folders.zip');
 
 const importDataInZipFile = async (req, res, next) => {
   try {
@@ -59,7 +55,7 @@ const importDataInZipFile = async (req, res, next) => {
       return res.status(400).json({ status: 0, message: 'Lấy dữ liệu từ file excel thất bại' });
     }
     // dữ liệu mẫu
-    const code = 'IncommingDocument';
+    const code = 'importIncommingDocument';
     //xử lý dữ liệu lưu các bản ghi vào db
     const data = await service.processData(dataExcel, dataFromAttachment, folderToSave, clientId, userName, code);
 
@@ -75,67 +71,4 @@ const importDataInZipFile = async (req, res, next) => {
   }
 };
 
-const exportDataInZipFile = async (req, res, next) => {
-  try {
-    const { receiverUnitInput, regexFilterInput, receiveDateInput, clientId } = req.query;
-    let filter = {
-      stage: 'receive',
-      receiverUnit: { $in: [receiverUnitInput] },
-      // parentDoc: { $exists: false },
-      $or: [
-        { abstractNote_en: { $regex: regexFilterInput || '', $options: 'i' } },
-        { toBookCode_en: { $regex: regexFilterInput || '', $options: 'i' } },
-        { abstractNote: { $regex: regexFilterInput || '', $options: 'i' } },
-        { toBookCode: { $regex: regexFilterInput || '', $options: 'i' } },
-      ],
-    };
-    if (receiveDateInput) {
-      filter.receiveDateInput = {
-        $gte: moment(receiveDateInput[0], 'DD/MM/YYYY').startOf('day').toDate(),
-        $lte: moment(receiveDateInput[1], 'DD/MM/YYYY').endOf('day').toDate(),
-      };
-    }
-    const documentFiles = await service.getDataDocument(filter);
-    if (!documentFiles.documents) {
-      return res.status(400).json('Không tìm thấy tài liệu cần export');
-    }
-
-    //chuyển trường thông tin sang file excel
-    let attachments;
-    if (!documentFiles.resultFile) {
-      attachments = null;
-    }
-    //lấy file tên và path của các file đính kèm
-    attachments = await service.getPathFile(documentFiles.resultFile, documentFiles.documents);
-
-    const outputFilePath = path.join(__dirname, '..', '..', 'files', 'attachments.zip');
-    //tạo file excel
-    const pathExcel = await service.createExelFile(documentFiles.documents);
-
-    // service.createZipWithFilesAndExcel(attachments.arrPath, attachments.arrName, pathExcel, outputFilePath);
-    service.createZipWithFilesAndExcel(
-      [
-        'D:\\work\\src\\uploads\\DHVB_DEV\\import_1725794041178\\attachments\\test_tepdinhkem.xlsx',
-        'D:\\work\\src\\uploads\\DHVB_DEV\\import_1725793992855\\attachments\\test_tepdinhkem.xlsx',
-      ],
-      attachments.arrName,
-      pathExcel,
-      outputFilePath,
-    );
-    res.download(downloadsDir, 'multi-folders.zip', (err) => {
-      if (err) {
-        console.error('Error downloading file:', err);
-        res.status(500).send('An error occurred');
-      } else {
-        // Bước 4: Xóa file Excel và file ZIP sau khi tải về
-        deleteFiles(excelFilePath);
-      }
-    });
-    console.log(123123123);
-    return res.status(200).json(documentFiles);
-  } catch (e) {
-    return e;
-  }
-};
-
-module.exports = { importDataInZipFile, exportDataInZipFile };
+module.exports = { importDataInZipFile };
