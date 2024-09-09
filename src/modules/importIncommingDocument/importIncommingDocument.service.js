@@ -274,7 +274,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       const signer = await crm.findOne({ code: 'nguoiki' }, '_id data');
       signer.data.map((item) => {
         if (item.value === rowData.signer) {
-          rowData.signer = { id: item._id, name: item.title };
+          rowData.signer = { title: item.title, value: item._id };
         }
       });
       if (!senderUnit) {
