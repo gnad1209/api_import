@@ -76,7 +76,7 @@ const importDataInZipFile = async (req, res, next) => {
       return res.status(400).json(data);
     }
 
-    return res.status(200).json({ errors: data.errors, documents: data.documents });
+    return res.status(200).json({ status: 1, errors: data.errors, documents: data.documents });
   } catch (e) {
     console.log('ERROR: ', e);
     return res.status(400).json(e);
