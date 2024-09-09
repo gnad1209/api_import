@@ -78,7 +78,7 @@ class UnzipService {
       const extractedFiles = [];
 
       // Tạo các thư mục chính nếu chưa tồn tại
-      const baseFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'OutGoing');
+      const baseFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'uploads', 'OutGoing');
       const folders = {
         VanBanBaoCao: path.join(baseFolder, 'VanBanBaoCao', `${defaultClientId}_${time}`),
         VanBanDuThao: path.join(baseFolder, 'VanBanDuThao', `${defaultClientId}_${time}`),

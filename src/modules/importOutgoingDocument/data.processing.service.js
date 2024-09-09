@@ -18,6 +18,8 @@ class DataProcessingService {
    */
   static async dataProcessing(data, folderPath, config = {}, uploadedUnzipToUnZipFile) {
     try {
+      // console.log('duong dan chua folder cac file goc ', folderPath);
+
       const result = [];
       // lấy biến config hoặc môi trường
       const defaultClientId = config.clientId ? config.clientId : process.env.CLIENT_KHOLS;

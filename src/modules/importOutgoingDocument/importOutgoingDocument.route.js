@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = 'src/modules/importOutgoingDocument/files';
+    const dir = 'src/modules/importOutgoingDocument/uploads/files';
 
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });

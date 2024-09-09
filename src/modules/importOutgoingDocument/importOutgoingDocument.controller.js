@@ -2,6 +2,7 @@ const FileService = require('./file.service');
 const ExcelService = require('./excel.service');
 const UnZipService = require('./unzip.service');
 const DataProcessingService = require('./data.processing.service');
+const path = require('path');
 
 const importimportOutgoingDocument = async (req, res, next) => {
   try {
@@ -32,17 +33,15 @@ const importimportOutgoingDocument = async (req, res, next) => {
     const zipFile0 = zipFile[0];
     const unzipData = await UnZipService.extractZip(zipFile0.path, processDataConfig.clientId);
 
+    // console.log('@@', zipFile0);
+
     // console.log('23 @@ giải này', unzipData);
 
-    // giải nén file zip đính kèm
+    // giải nén file zip thu_muc_file_dinh_kem
     let attachmentData = [];
     for (const element of unzipData) {
       if (element.mimetype === 'application/zip' && element.name === 'thu_muc_file_dinh_kem.zip') {
-        const dataAttachment = await UnZipService.extractZip(
-          element.path,
-          processDataConfig.clientId,
-          (isPath = false),
-        );
+        const dataAttachment = await UnZipService.extractZip(element.path, processDataConfig.clientId);
         attachmentData = dataAttachment;
         break;
       }
@@ -84,6 +83,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
         message: 'đọc file excel thất bại',
       });
     }
+    console.log('4 @@ đọc file excel và validate thành công');
 
     // for (const element of excelData) {
     //   console.log('===============');
@@ -93,6 +93,9 @@ const importimportOutgoingDocument = async (req, res, next) => {
     // }
 
     // giải nén file zip đính kèm và tạo đường dẫn liên kết folder
+    //OutGoing/VanBanBaoCao
+    //OutGoing/VanBanDinhKem
+    //OutGoing/VanBanDuThao
     let attachmentDataV2 = [];
     for (const element of unzipData) {
       if (element.mimetype === 'application/zip' && element.name === 'thu_muc_file_dinh_kem.zip') {
@@ -105,35 +108,32 @@ const importimportOutgoingDocument = async (req, res, next) => {
         break;
       }
     }
-    if (attachmentData.length < 1) {
+    if (attachmentDataV2.length < 1) {
       return res.status(400).json({
         status: 0,
-        message: 'giải nén thu_muc_file_dinh_kem.zip thất bại',
+        message: 'giải nén thu_muc_file_dinh_kem.zip đường dẫn liên kết folder',
       });
     }
-    console.log('attachmentDataV2', attachmentDataV2);
+    // console.log('attachmentDataV2', attachmentDataV2);
 
     // create bản ghi cho tất cả các file
     const [uploadedZipFile, uploadedUnZipFile, uploadedUnzipToUnZipFile] = await FileService.processAndSaveFiles(
       zipFile0,
       unzipData,
-      attachmentData,
+      attachmentDataV2,
     );
 
     // console.log('uploadedZipFile', uploadedZipFile);
     // console.log('uploadedUnZipFile', uploadedUnZipFile);
     // console.log('uploadedUnzipToUnZipFile', uploadedUnzipToUnZipFile);
-    console.log('3.1 @@ create bản ghi cho tất cả các file thành công');
+    console.log('4.1 @@ create bản ghi cho tất cả các file thành công');
 
     // console.log(' element.path == ', unzipData);
 
     // tạo folder và lưu file
     const folderSaveFiles = await FileService.createFolderAndSaveFiles(uploadedZipFile.toObject());
 
-    console.log('4 @@ lưu folder xong');
-
-    console.log('5 @@ đọc file excel thành công');
-    console.log('6 @@ validate thành công');
+    console.log('5 @@ lưu folder xong');
 
     // return res.json({ status: 1, data: excelData });
 
@@ -144,7 +144,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
       processDataConfig,
       uploadedUnzipToUnZipFile,
     );
-    console.log('7 @@ Lưu vào database thành công');
+    console.log('6 @@ Lưu vào database thành công');
     console.log('DONE DONE DONE DONE DONE DONE DONE');
 
     return res.json({ status: 1, data: data });

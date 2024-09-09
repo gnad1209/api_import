@@ -67,64 +67,23 @@ class FileService {
    * @throws {Error} - Ném lỗi nếu tập tin không tồn tại hoặc xảy ra lỗi khi tạo thư mục.
    */
   static async createFolderAndSaveFiles(compressedFile) {
-
     // console.log('compressedFile', compressedFile);
-    
+
     try {
       const time = new Date() * 1;
 
       const compressedFileName = compressedFile.name;
-      const folderToSave = path.join(
-        __dirname,
-        '..',
-        'importOutgoingDocument',
-        'uploads',
-        `OUTGOING`,
-        `import_${time}`,
-      );
-      const firstUploadFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'files');
-
-      // // tạo đường dẫn lưu file văn bản báo cáo
-      // const folderToSaveVbbc = path.join(
-      //   __dirname,
-      //   '..',
-      //   'importOutgoingDocument',
-      //   'uploads',
-      //   'OutGoing',
-      //   `VANBANBAOCAO`,
-      // );
-      // // tạo đường dẫn lưu file văn bản dự thảo
-      // const folderToSaveVbdt = path.join(
-      //   __dirname,
-      //   '..',
-      //   'importOutgoingDocument',
-      //   'uploads',
-      //   'OutGoing',
-      //   `VANBANDUTHAO`,
-      // );
-      // // tạo đường dẫn lưu file văn bản đính kèm
-      // const folderToSaveVbdk = path.join(
-      //   __dirname,
-      //   '..',
-      //   'importOutgoingDocument',
-      //   'uploads',
-      //   'OutGoing',
-      //   `VANBANDINHKEM`,
-      // );
-      // if (!fs.existsSync(folderToSaveVbbc) || !fs.existsSync(folderToSaveVbdt) || !fs.existsSync(folderToSaveVbdk)) {
-      //   fs.mkdirSync(folderToSaveVbbc, { recursive: true });
-      //   fs.mkdirSync(folderToSaveVbdt, { recursive: true });
-      //   fs.mkdirSync(folderToSaveVbdk, { recursive: true });
-      // }
+      // const folderToSave = path.join(__dirname, '..', 'importOutgoingDocument', 'uploads', `OutGoing`, `import_zip`);
+      const firstUploadFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'uploads', 'files');
 
       const compressedFilePath = path.join(firstUploadFolder, compressedFileName);
-      const newCompressedFilePath = path.join(folderToSave, compressedFile.name);
+      // const newCompressedFilePath = path.join(folderToSave, compressedFile.name);
 
       // Kiểm tra và tạo thư mục firstUploadFolder nếu chưa tồn tại
       await fsPromise.mkdir(firstUploadFolder, { recursive: true });
 
       // Kiểm tra và tạo thư mục folderToSave nếu chưa tồn tại
-      await fsPromise.mkdir(folderToSave, { recursive: true });
+      // await fsPromise.mkdir(folderToSave, { recursive: true });
 
       // Kiểm tra file có tồn tại hay không
       const fileExists = await fsPromise
@@ -137,10 +96,10 @@ class FileService {
       }
 
       // Sao chép file đến thư mục mới
-      await fsPromise.copyFile(compressedFilePath, newCompressedFilePath);
+      // await fsPromise.copyFile(compressedFilePath, newCompressedFilePath);
 
       // console.log('Thư mục lưu: ', folderToSave);
-      return folderToSave;
+      return firstUploadFolder;
     } catch (error) {
       console.log('Lỗi khi thực hiện hàm tạo folder:', error);
       throw error;
