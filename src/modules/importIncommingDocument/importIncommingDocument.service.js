@@ -13,8 +13,6 @@ const unzipper = require('unzipper');
 const mime = require('mime-types');
 const xlsx = require('xlsx');
 const moment = require('moment');
-const ExcelJS = require('exceljs');
-const archiver = require('archiver');
 
 const fakeValue = require('./fakeValue.json');
 const {
@@ -261,13 +259,13 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
-      if (documentIncomming) {
-        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
-        if (!allErrors.some((error) => error.message === errorMessage)) {
-          errorDocuments.push({ status: 400, message: errorMessage });
-        }
-        continue;
-      }
+      // if (documentIncomming) {
+      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+      //   if (!allErrors.some((error) => error.message === errorMessage)) {
+      //     errorDocuments.push({ status: 400, message: errorMessage });
+      //   }
+      //   continue;
+      // }
 
       const senderUnit = await SenderUnit.findOne({ value: rowData.senderUnit, status: 1 }, '_id').lean();
 

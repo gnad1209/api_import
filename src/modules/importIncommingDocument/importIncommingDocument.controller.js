@@ -1,6 +1,7 @@
 const service = require('./importIncommingDocument.service');
 const path = require('path');
-const { deleteFolderAndContent } = require('../config/common');
+const { deleteFolderAndContent, existsPath } = require('../config/common');
+const fsPromises = require('fs').promises;
 
 const importDataInZipFile = async (req, res, next) => {
   try {
@@ -16,6 +17,17 @@ const importDataInZipFile = async (req, res, next) => {
     const compressedFilePath = path.join(firstUploadFolder, zipFile.filename);
     const folderToSave = path.join(baseDir, 'uploads', clientId, `import_${time}`);
     const folderToSaveAttachment = path.join(folderToSave, 'attachments');
+    const [checkUploadFolder, checkClientFolder] = await Promise.all([
+      existsPath(path.join(baseDir, 'uploads')),
+      existsPath(path.join(baseDir, 'uploads', clientId)),
+    ]);
+
+    if (!checkUploadFolder) {
+      await fsPromises.mkdir(path.join(baseDir, 'uploads'));
+    }
+    if (!checkClientFolder) {
+      await fsPromises.mkdir(path.join(baseDir, 'uploads', clientId));
+    }
 
     //giải nén file zip đầu vào
     if (!(await service.unzipFile(folderToSave, compressedFilePath))) {

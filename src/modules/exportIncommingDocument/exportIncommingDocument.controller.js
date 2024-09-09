@@ -1,9 +1,10 @@
 const service = require('./exportIncommingDocument.service');
 const path = require('path');
-const { deleteFolderAndContent } = require('../config/common');
+const { deleteFolderAndContent, existsPath } = require('../config/common');
 const moment = require('moment');
 const os = require('os');
-const downloadsDir = path.join(os.homedir(), 'Downloads', 'data_export.zip');
+const fs = require('fs');
+let downloadsDir = path.join(os.homedir(), 'Downloads', 'data_export.zip');
 
 const exportDataInZipFile = async (req, res, next) => {
   try {
@@ -32,6 +33,8 @@ const exportDataInZipFile = async (req, res, next) => {
     if (!documentFiles.documents) {
       return res.status(400).json({ status: 400, messages: 'Không tìm thấy tài liệu cần export' });
     }
+    //tạo file excel và lấy path của file vừa đc tạo
+    const pathExcel = await service.createExelFile(documentFiles.documents);
 
     let attachments;
     if (!documentFiles.resultFile) {
@@ -41,24 +44,37 @@ const exportDataInZipFile = async (req, res, next) => {
     //lấy tên và path của các file đính kèm
     attachments = await service.getPathFile(documentFiles.resultFile, documentFiles.documents);
     const outputFilePath = path.join(__dirname, '..', '..', 'files', 'attachments.zip');
+    const finalZipFile = path.join(__dirname, '..', '..', 'files', 'data_export.zip');
+    // const checkAttachmentFile = await service.createZipFile(attachments.arrPath, attachments.arrName, outputFilePath);
+    // if (checkAttachmentFile.status === 200) {
+    //   await service.createZipFile([pathExcel, outputFilePath], [], finalZipFile);
+    // }
 
-    //tạo file excel và lấy path của file vừa đc tạo
-    const pathExcel = await service.createExelFile(documentFiles.documents);
     if (attachments.arrPath.length < 1) {
       //tạo file zip
       await service.createZipFile([pathExcel], [], downloadsDir);
       deleteFolderAndContent(pathExcel);
-      return res.status(200).json(documentFiles);
+      return res.status(200).json({ status: 200, message: 'Tải xuống thành công' });
     }
+
+    let checkFinalPath = existsPath(downloadsDir);
+    let i = 0;
+    while (checkFinalPath) {
+      i++;
+      downloadsDir = path.join(os.homedir(), 'Downloads', `data_export(${i}).zip`);
+      checkFinalPath = existsPath(downloadsDir);
+    }
+
     // tạo file excel và file zip tệp đính kèm
-    const check = await service.createZipFile(attachments.arrPath, attachments.arrName, outputFilePath);
-    if (check) {
+    const checkAttachmentFile = await service.createZipFile(attachments.arrPath, attachments.arrName, outputFilePath);
+    if (checkAttachmentFile.status === 200) {
       await service.createZipFile([pathExcel, outputFilePath], [], downloadsDir);
     }
+
     // xóa file tạm
     deleteFolderAndContent(pathExcel);
     deleteFolderAndContent(outputFilePath);
-    return res.status(200).json(documentFiles);
+    return res.status(200).json({ status: 200, message: 'Tải xuống thành công' });
   } catch (e) {
     return e;
   }

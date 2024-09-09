@@ -8,6 +8,7 @@ const fileManager = require('../models/fileManager.model');
 const moment = require('moment');
 const ExcelJS = require('exceljs');
 const archiver = require('archiver');
+const { deleteFolderAndContent } = require('../config/common');
 
 /**
  * Lọc điều kiện tìm kiếm hn

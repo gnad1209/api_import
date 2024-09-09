@@ -3,6 +3,5 @@ node_modules/
 .eslintrc.json
 .env
 
-src/modules/files/
 src/modules/uploads/
 src/uploads/
