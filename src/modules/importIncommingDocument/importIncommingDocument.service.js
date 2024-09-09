@@ -219,7 +219,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         rowData.documentDate,
         rowData.receiveDate,
         rowData.toBookDate,
-        rowData.deadLine,
+        rowData.deadline,
         i + 1,
       );
       if (errors.length > 0 || errorsDate.length > 0) {
@@ -261,13 +261,13 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
-      // if (documentIncomming) {
-      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
-      //   if (!allErrors.some((error) => error.message === errorMessage)) {
-      //     errorDocuments.push({ status: 400, message: errorMessage });
-      //   }
-      //   continue;
-      // }
+      if (documentIncomming) {
+        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+        if (!allErrors.some((error) => error.message === errorMessage)) {
+          errorDocuments.push({ status: 400, message: errorMessage });
+        }
+        continue;
+      }
 
       const senderUnit = await SenderUnit.findOne({ value: rowData.senderUnit, status: 1 }, '_id').lean();
 
@@ -349,7 +349,7 @@ const extractRowData = (row) => {
     const documentDate = row[10];
     const receiveDate = row[11];
     const toBookDate = row[12];
-    const deadLine = row[13];
+    const deadline = row[13];
     const signer = row[14];
 
     return {
@@ -366,7 +366,7 @@ const extractRowData = (row) => {
       documentDate,
       receiveDate,
       toBookDate,
-      deadLine,
+      deadline,
       signer,
     };
   } catch (e) {
@@ -476,10 +476,10 @@ const validateRequiredFields = async (fields, rowNumber) => {
  * @param {string} documentDate - Ngày văn bản.
  * @param {string} receiveDate - ngày nhận văn bản đến.
  * @param {string} toBookDate - ngày vào sổ.
- * @param {string} deadLine - hạn được giao.
+ * @param {string} deadline - hạn được giao.
  * @returns {number} Số cột.
  */
-const validateDates = (documentDate, receiveDate, toBookDate, deadLine, rowNumber) => {
+const validateDates = (documentDate, receiveDate, toBookDate, deadline, rowNumber) => {
   try {
     const errors = [];
     // Đổi định dạng các ngày về YYYY/MM/DD
@@ -487,8 +487,8 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadLine, rowNumbe
     const recDate = moment(receiveDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
     const toBkDate = moment(toBookDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
     let dlDate;
-    if (deadLine) {
-      dlDate = moment(deadLine, 'DD/MM/YYYY').format('YYYY/MM/DD');
+    if (deadline) {
+      dlDate = moment(deadline, 'DD/MM/YYYY').format('YYYY/MM/DD');
     }
 
     const today = moment().format('YYYY/MM/DD');
@@ -502,7 +502,7 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadLine, rowNumbe
     if (!moment(toBkDate, 'YYYY/MM/DD', true).isValid()) {
       errors.push({ status: 400, message: `Ngày gửi vào sổ không hợp lệ - dòng thứ ${rowNumber}` });
     }
-    if (deadLine && !moment(dlDate, 'YYYY/MM/DD', true).isValid()) {
+    if (deadline && !moment(dlDate, 'YYYY/MM/DD', true).isValid()) {
       errors.push({ status: 400, message: `Hạn chót không hợp lệ - dòng thứ ${rowNumber}` });
     }
 
@@ -527,10 +527,10 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadLine, rowNumbe
       });
     }
 
-    if (deadLine && moment(dlDate).isBefore(today)) {
+    if (deadline && moment(dlDate).isBefore(today)) {
       errors.push({
         status: 400,
-        message: `Deadline  không được nhỏ hơn ngày hiện tại - dòng thứ ${rowNumber}`,
+        message: `deadline  không được nhỏ hơn ngày hiện tại - dòng thứ ${rowNumber}`,
       });
     }
 

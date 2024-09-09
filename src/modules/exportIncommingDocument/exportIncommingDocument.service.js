@@ -12,7 +12,6 @@ const archiver = require('archiver');
 /**
  * Lọc điều kiện tìm kiếm hn
  * @param {Object} filter Mảng dữ liệu đọc từ excel
- * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
 const getDataDocument = async (filter) => {
@@ -20,7 +19,7 @@ const getDataDocument = async (filter) => {
     const documents = await incommingDocument
       .find(
         filter,
-        'toBook abstractNote urgencyLevel senderUnit files secondBook documentType documentField receiveMethod privateLevel documentDate receiveDate toBookDate deadLine signer',
+        'toBook abstractNote urgencyLevel senderUnit files secondBook documentType documentField receiveMethod privateLevel documentDate receiveDate toBookDate deadline signer',
       )
       .lean();
     if (documents?.length < 1) {
@@ -39,7 +38,7 @@ const getDataDocument = async (filter) => {
       document.documentDate = moment(document.documentDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.receiveDate = moment(document.receiveDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.toBookDate = moment(document.toBookDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
-      document.deadLine = moment(document.deadLine, 'YYYY/MM/DD').format('DD/MM/YYYY');
+      document.deadline = moment(document.deadline, 'YYYY/MM/DD').format('DD/MM/YYYY');
     });
     return { documents, resultFile };
   } catch (e) {
@@ -48,10 +47,9 @@ const getDataDocument = async (filter) => {
 };
 
 /**
- * Xử lý dữ liệu tạo các bản ghi mới trong bảng document và file
- * @param {Array} dataExcel Mảng dữ liệu đọc từ excel
- * @param {Array} dataAttachments Mảng dữ liệu đọc từ file zip đính kèm
- * @param {*} config Cấu hình tùy chọn
+ * Lấy đường dẫn các file đính kèm
+ * @param {Array} ids Mảng id của các file đính kèm của các bản ghi
+ * @param {Array} documents Mảng các bản ghi vừa được lọc
  * @returns trả về những bản ghi mới từ file excel
  */
 const getPathFile = async (ids, documents) => {
@@ -75,9 +73,8 @@ const getPathFile = async (ids, documents) => {
 };
 
 /**
- * Xử lý dữ liệu tạo các bản ghi mới trong bảng document và file
- * @param {Array} dataExcel Mảng dữ liệu đọc từ excel
- * @param {Array} dataAttachments Mảng dữ liệu đọc từ file zip đính kèm
+ * tạo file excel từ các bản ghi vừa được lọc
+ * @param {Array} documents Mảng dữ liệu bản ghi được lọc
  * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
@@ -99,7 +96,7 @@ const createExelFile = async (documents) => {
       { header: 'Ngày văn bản', key: 'documentDate', width: 15 },
       { header: 'Ngày nhận văn bản', key: 'receiveDate', width: 15 },
       { header: 'Ngày vào sổ', key: 'toBookDate', width: 15 },
-      { header: 'Hạn được giao', key: 'deadLine', width: 15 },
+      { header: 'Hạn được giao', key: 'deadline', width: 15 },
       { header: 'Người ký', key: 'signer', width: 10 },
     ];
     documents.map((document) => {
@@ -117,7 +114,7 @@ const createExelFile = async (documents) => {
         documentDate: document.documentDate,
         receiveDate: document.receiveDate,
         toBookDate: document.toBookDate,
-        deadLine: document.deadLine,
+        deadline: document.deadline,
         signer: document.signer,
       });
     });
@@ -130,9 +127,10 @@ const createExelFile = async (documents) => {
 };
 
 /**
- * Xử lý dữ liệu tạo các bản ghi mới trong bảng document và file
- * @param {Array} dataExcel Mảng dữ liệu đọc từ excel
- * @param {Array} dataAttachments Mảng dữ liệu đọc từ file zip đính kèm
+ * tạo file zip nén các file được chỉ định
+ * @param {Array} arrPath Mảng đường dẫn các file định nén
+ * @param {Array} arrName Mảng tên file đính kèm
+ * @param {String} outputFilePath Đường dẫn lưu file sau khi nén
  * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
