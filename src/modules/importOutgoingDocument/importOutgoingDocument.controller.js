@@ -67,6 +67,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
       ) {
         const dataExcel = await ExcelService.getDataFromExcelFileAndValidate(element, attachmentData);
         if (dataExcel.status == 0) {
+          console.log(' validate thất bại', dataExcel.data);
           return res.status(400).json({
             status: 0,
             message: dataExcel.data,
@@ -83,7 +84,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
         message: 'đọc file excel thất bại',
       });
     }
-    console.log('4 @@ đọc file excel và validate thành công');
+    console.log('4 @@ đọc file excel và validate thành công', excelData);
 
     // for (const element of excelData) {
     //   console.log('===============');

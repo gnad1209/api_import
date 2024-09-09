@@ -132,7 +132,7 @@ class UnzipService {
       }
 
       if (extractedFiles.length > 0) {
-        console.log('Giải nén thành công!');
+        console.log('Giải nén và validate thành công!');
         return extractedFiles;
       } else {
         console.log('Không có file nào được giải nén!');
