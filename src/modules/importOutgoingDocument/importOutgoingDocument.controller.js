@@ -111,7 +111,7 @@ const importimportOutgoingDocument = async (req, res, next) => {
         message: 'giải nén thu_muc_file_dinh_kem.zip thất bại',
       });
     }
-    console.log('attachmentDataV2', attachmentDataV2.length);
+    console.log('attachmentDataV2', attachmentDataV2);
 
     // create bản ghi cho tất cả các file
     const [uploadedZipFile, uploadedUnZipFile, uploadedUnzipToUnZipFile] = await FileService.processAndSaveFiles(

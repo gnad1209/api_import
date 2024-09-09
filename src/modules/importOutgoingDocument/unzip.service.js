@@ -128,7 +128,7 @@ class UnzipService {
           folderType: folderType,
         });
 
-        console.log(`Đã giải nén: ${fileName} vào ${folderToSave}`);
+        // console.log(`Đã giải nén: ${fileName} vào ${folderToSave}`);
       }
 
       if (extractedFiles.length > 0) {
