@@ -1,9 +1,8 @@
 const path = require('path');
 const fs = require('fs');
-const fsPromises = require('fs').promises;
 const incommingDocument = require('../models/incommingDocument.model');
-// const Document = require('../models/document.model');
 const fileManager = require('../models/fileManager.model');
+const crm = require('../models/crmSource.model');
 // const fileManager = require('../../server/api/fileManager/fileManager.model');
 const moment = require('moment');
 const ExcelJS = require('exceljs');
@@ -27,7 +26,7 @@ const getDataDocument = async (filter) => {
       return;
     }
     let resultFile = [];
-    documents.map((document) => {
+    documents.map(async (document) => {
       if (!document.files) {
         document.files = null;
       } else {
@@ -40,6 +39,12 @@ const getDataDocument = async (filter) => {
       document.receiveDate = moment(document.receiveDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.toBookDate = moment(document.toBookDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.deadline = moment(document.deadline, 'YYYY/MM/DD').format('DD/MM/YYYY');
+      const signers = await crm.findOne({ code: 'nguoiki' }, 'data').lean();
+      signers.data.map((signer) => {
+        if (signer.title === document.signer.value) {
+          document.signer = signer.value;
+        }
+      });
     });
     return { documents, resultFile };
   } catch (e) {
@@ -53,23 +58,16 @@ const getDataDocument = async (filter) => {
  * @param {Array} documents Mảng các bản ghi vừa được lọc
  * @returns trả về những bản ghi mới từ file excel
  */
-const getPathFile = async (ids, documents) => {
+const getPathFile = async (ids) => {
   try {
     const files = await fileManager.find({ _id: { $in: ids } }, 'mid name fullPath');
     let arrPath = [];
-    let arrName = [];
     files.map((file) => {
       arrPath.push(file.fullPath);
-      documents.map((document) => {
-        if (file.mid.toString() === document._id.toString()) {
-          const name = document.toBook + ' ' + file.name;
-          arrName.push(name);
-        }
-      });
     });
-    return { arrPath, arrName };
+    return arrPath;
   } catch (e) {
-    return e;
+    throw e;
   }
 };
 
@@ -135,44 +133,35 @@ const createExelFile = async (documents) => {
  * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
-const createZipFile = async (arrPath, arrName, outputFilePath) => {
-  try {
-    return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(outputFilePath);
-      const archive = archiver('zip', {
-        zlib: { level: 9 }, // set compression level to the highest
-      });
-
-      // Lắng nghe sự kiện khi tạo tệp ZIP hoàn thành
-      output.on('close', () => {
-        console.log(`Tạo file zip thành công: ${archive.pointer()} tổng số byte`);
-        resolve({ status: 200 });
-      });
-      // Lắng nghe sự kiện lỗi
-      archive.on('error', (err) => {
-        reject(err);
-      });
-
-      // Bắt đầu nén file
-      archive.pipe(output);
-
-      // Thêm từng file vào archive
-      arrPath.forEach((filePath, index) => {
-        let fileName;
-        if (arrName.length < 1) {
-          fileName = path.basename(filePath); // Lấy tên tệp từ đường dẫn
-        } else {
-          fileName = index + '_' + arrName[index];
-        }
-        archive.file(filePath, { name: fileName });
-      });
-
-      // Kết thúc quá trình nén
-      archive.finalize();
+const createZipFile = async (arrPath, outputFilePath) => {
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(outputFilePath);
+    const archive = archiver('zip', {
+      zlib: { level: 9 }, // set compression level to the highest
     });
-  } catch (e) {
-    return e;
-  }
+
+    // Lắng nghe sự kiện khi tạo tệp ZIP hoàn thành
+    output.on('close', () => {
+      console.log(`Tạo file zip thành công: ${archive.pointer()} tổng số byte`);
+      resolve({ status: 200 });
+    });
+    // Lắng nghe sự kiện lỗi
+    archive.on('error', (err) => {
+      reject(err);
+    });
+
+    // Bắt đầu nén file
+    archive.pipe(output);
+
+    // Thêm từng file vào archive
+    arrPath.forEach((filePath) => {
+      const fileName = path.basename(filePath);
+      archive.file(filePath, { name: fileName });
+    });
+
+    // Kết thúc quá trình nén
+    archive.finalize();
+  });
 };
 
 module.exports = {
