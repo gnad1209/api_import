@@ -76,17 +76,17 @@ class ExcelService {
             if (columnIndex === 12 && cellValue.trim() === '') {
               rowErrors.push(`Cột ${columnIndex + 1}, dòng ${rowIndex + 2} hồ sơ công việc không đúng`);
             }
-            if (columnIndex === 13 && isExcelFileInUnzippedFiles(cellValue, uploadedUnzipToUnZipFile)) {
+            if (columnIndex === 13 && isExcelFileInUnzippedFiles(columnIndex, cellValue, uploadedUnzipToUnZipFile)) {
               rowErrors.push(
                 `Cột ${columnIndex + 1}, dòng ${rowIndex + 2} văn bản báo cáo không có trong tệp đính kèm`,
               );
             }
-            if (columnIndex === 14 && isExcelFileInUnzippedFiles(cellValue, uploadedUnzipToUnZipFile)) {
+            if (columnIndex === 14 && isExcelFileInUnzippedFiles(columnIndex, cellValue, uploadedUnzipToUnZipFile)) {
               rowErrors.push(
-                `Cột ${columnIndex + 1}, dòng ${rowIndex + 2} văn bản dự thảo không có trong tệp đính kèm`,
+                `Cột ${columnIndex + 1}, dòng ${rowIndex + 2} văn bản dự thảo không được để trống hoặc không có trong tệp đính kèm`,
               );
             }
-            if (columnIndex === 15 && isExcelFileInUnzippedFiles(cellValue, uploadedUnzipToUnZipFile)) {
+            if (columnIndex === 15 && isExcelFileInUnzippedFiles(columnIndex, cellValue, uploadedUnzipToUnZipFile)) {
               rowErrors.push(
                 `Cột ${columnIndex + 1}, dòng ${rowIndex + 2} văn bản đính kèm không có trong tệp đính kèm`,
               );
@@ -110,12 +110,20 @@ class ExcelService {
       throw error;
     }
 
-    function isExcelFileInUnzippedFiles(excelNameFile, unZipNameFile) {
+    function isExcelFileInUnzippedFiles(columnIndex, excelNameFile, unZipNameFile) {
+      // Nếu cột là 14 và excelNameFile trống, trả về false
+      if (columnIndex === 14 && excelNameFile.trim() === '') {
+        return true;
+      }
+
+      // Nếu tên file khớp với một file đã giải nén hoặc tên file trống, trả về false
       for (const element of unZipNameFile) {
-        if (excelNameFile == element.name) {
+        if (excelNameFile === element.name || excelNameFile.trim() === '') {
           return false;
         }
       }
+
+      // Nếu không thuộc các điều kiện trên, trả về true
       return true;
     }
   }

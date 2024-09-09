@@ -78,7 +78,7 @@ class UnzipService {
       const extractedFiles = [];
 
       // Tạo các thư mục chính nếu chưa tồn tại
-      const baseFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'OutGoing');
+      const baseFolder = path.join(__dirname, '..', 'importOutgoingDocument', 'uploads', 'OutGoing');
       const folders = {
         VanBanBaoCao: path.join(baseFolder, 'VanBanBaoCao', `${defaultClientId}_${time}`),
         VanBanDuThao: path.join(baseFolder, 'VanBanDuThao', `${defaultClientId}_${time}`),
@@ -128,11 +128,11 @@ class UnzipService {
           folderType: folderType,
         });
 
-        console.log(`Đã giải nén: ${fileName} vào ${folderToSave}`);
+        // console.log(`Đã giải nén: ${fileName} vào ${folderToSave}`);
       }
 
       if (extractedFiles.length > 0) {
-        console.log('Giải nén thành công!');
+        console.log('Giải nén và validate thành công!');
         return extractedFiles;
       } else {
         console.log('Không có file nào được giải nén!');
