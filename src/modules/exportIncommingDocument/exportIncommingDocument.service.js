@@ -20,15 +20,16 @@ const getDataDocument = async (filter) => {
       )
       .lean();
     if (documents?.length < 1) {
-      return { status: 400, message: 'Không tìm thấy dữ liệu' };
+      return;
     }
     let resultFile = [];
     documents.map((document) => {
-      if (document.files) {
-        document.files.map((file) => {
-          resultFile.push(file.id);
-        });
+      if (!document.files) {
+        document.files = null;
       }
+      document.files.map((file) => {
+        resultFile.push(file.id);
+      });
       document.files = document.files.map((file) => file.name).join(', ');
       document.documentDate = moment(document.documentDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.receiveDate = moment(document.receiveDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
@@ -122,7 +123,6 @@ const createZipFile = async (arrPath, arrName, outputFilePath) => {
         console.log(`Tạo file zip thành công: ${archive.pointer()} tổng số byte`);
         resolve();
       });
-
       // Lắng nghe sự kiện lỗi
       archive.on('error', (err) => {
         reject(err);
@@ -132,12 +132,15 @@ const createZipFile = async (arrPath, arrName, outputFilePath) => {
       archive.pipe(output);
 
       // Thêm từng file vào archive
-      arrPath.forEach((filePath) => {
-        console.log(path);
-        let i = 0;
-        const fileName = path.basename(filePath); // Lấy tên tệp từ đường dẫn
+      arrPath.forEach((filePath, index) => {
+        let fileName;
+        if (arrName.length < 1) {
+          fileName = path.basename(filePath); // Lấy tên tệp từ đường dẫn
+        } else {
+          fileName = arrName[index] + '_' + index;
+        }
+        console.log(fileName);
         archive.file(filePath, { name: fileName });
-        i++;
       });
 
       // Kết thúc quá trình nén
