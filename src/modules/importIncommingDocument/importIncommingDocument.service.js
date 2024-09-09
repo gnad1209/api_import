@@ -293,7 +293,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
         arrFiles,
         folderToSave,
         clientId,
-        userName,
+        username,
         employee._id,
         code,
       );
@@ -546,13 +546,13 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadline, rowNumbe
  * @param {Array} arrFiles - Mảng tên file cần xử lý.
  * @param {Array} folderToSave - Đường dẫn folder sau khi giải nén.
  * @param {Array} clientId - client Id.
- * @param {Array} userName - tên người dùng import dữ liệu.
+ * @param {Array} username - tên người dùng import dữ liệu.
  * @param {Array} createdBy - id người tạo bản ghi file.
  * @param {Array} code - Đại diện cho module upload file.
  * @returns {Promise<Array>} Mảng các đối tượng file đã được xử lý và lưu trữ.
  */
 
-const processAttachments = async (dataAttachments, arrFiles, folderToSave, clientId, userName, createdBy, code) => {
+const processAttachments = async (dataAttachments, arrFiles, folderToSave, clientId, username, createdBy, code) => {
   try {
     const resultFile = [];
 
@@ -569,7 +569,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
           existingFile = new fileManager({
             ...file,
             parentPath: folderToSave,
-            username: userName,
+            username: username,
             isFile: true,
             realName: `${folderToSave}/${file.name}`,
             clientId: clientId,
