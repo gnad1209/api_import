@@ -3,7 +3,7 @@ const path = require('path');
 const { deleteFolderAndContent } = require('../config/common');
 const moment = require('moment');
 const os = require('os');
-const downloadsDir = path.join(os.homedir(), 'Downloads', 'multi-folders.zip');
+const downloadsDir = path.join(os.homedir(), 'Downloads', 'data_export.zip');
 
 const exportDataInZipFile = async (req, res, next) => {
   try {
@@ -21,7 +21,7 @@ const exportDataInZipFile = async (req, res, next) => {
       ],
     };
     if (receiveDateInput) {
-      filter.receiveDateInput = {
+      filter.receiveDate = {
         $gte: moment(receiveDateInput[0], 'DD/MM/YYYY').startOf('day').toDate(),
         $lte: moment(receiveDateInput[1], 'DD/MM/YYYY').endOf('day').toDate(),
       };
@@ -55,6 +55,7 @@ const exportDataInZipFile = async (req, res, next) => {
     if (check) {
       await service.createZipFile([pathExcel, outputFilePath], [], downloadsDir);
     }
+    // xóa file tạm
     deleteFolderAndContent(pathExcel);
     deleteFolderAndContent(outputFilePath);
     return res.status(200).json(documentFiles);

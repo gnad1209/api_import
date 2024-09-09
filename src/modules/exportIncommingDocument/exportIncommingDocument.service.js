@@ -161,7 +161,7 @@ const createZipFile = async (arrPath, arrName, outputFilePath) => {
         if (arrName.length < 1) {
           fileName = path.basename(filePath); // Lấy tên tệp từ đường dẫn
         } else {
-          fileName = arrName[index] + '_' + index;
+          fileName = index + '_' + arrName[index];
         }
         archive.file(filePath, { name: fileName });
       });
