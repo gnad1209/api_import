@@ -182,9 +182,9 @@ async function getDataFromExcelFile(filePath, check = false) {
  * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
-const processData = async (dataExcel, dataAttachments, folderToSave, clientId, userName, code) => {
+const processData = async (dataExcel, dataAttachments, folderToSave, clientId, username, code) => {
   try {
-    const employee = await Employee.findOne({ userName }).lean();
+    const employee = await Employee.findOne({ username }).lean();
     if (!employee) {
       return { status: 400, message: 'Người dùng không tồn tại' };
     }

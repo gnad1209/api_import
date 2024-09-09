@@ -6,7 +6,7 @@ const importDataInZipFile = async (req, res, next) => {
   try {
     // khởi tạo biến lưu file zip,path file zip, clientId, folder lưu file sau khi giải nén
     const { file: zipFile } = req;
-    const { clientId, userName } = req.query;
+    const { clientId, username } = req.query;
     // kiểm tra file được tải lên chưa
     if (!zipFile) return res.status(400).json({ status: 0, message: 'Tải file lên thất bại' });
 
@@ -57,7 +57,7 @@ const importDataInZipFile = async (req, res, next) => {
     // dữ liệu mẫu
     const code = 'importIncommingDocument';
     //xử lý dữ liệu lưu các bản ghi vào db
-    const data = await service.processData(dataExcel, dataFromAttachment, folderToSave, clientId, userName, code);
+    const data = await service.processData(dataExcel, dataFromAttachment, folderToSave, clientId, username, code);
 
     if (data.status === 400) {
       await deleteFolderAndContent(folderToSave);
