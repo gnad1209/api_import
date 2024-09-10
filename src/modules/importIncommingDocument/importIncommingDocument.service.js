@@ -261,8 +261,8 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
             receiverUnit: '66dbcff337232cbd8902a399',
             senderUnit: rowData.senderUnit,
             documentDate: {
-              $gte: moment(rowData.documentDate, 'DD/MM/YYYY').startOf('day').toDate(),
-              $lte: moment(rowData.documentDate, 'DD/MM/YYYY').endOf('day').toDate(),
+              $gte: moment(rowData.documentDate, 'YYYY/MM/DD').startOf('day').toDate(),
+              $lte: moment(rowData.documentDate, 'YYYY/MM/DD').endOf('day').toDate(),
             },
           },
           '_id',
