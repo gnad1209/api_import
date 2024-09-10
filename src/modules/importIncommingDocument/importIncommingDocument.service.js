@@ -497,6 +497,7 @@ const validateDates = (documentDate, receiveDate, toBookDate, deadline, rowNumbe
     if (!moment(toBookDate, 'YYYY/MM/DD', true).isValid()) {
       errors.push({ status: 400, message: `Ngày gửi vào sổ không hợp lệ - dòng thứ ${rowNumber}` });
     }
+
     if (deadline && !moment(deadline, 'YYYY/MM/DD', true).isValid()) {
       errors.push({ status: 400, message: `Hạn chót không hợp lệ - dòng thứ ${rowNumber}` });
     }

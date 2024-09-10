@@ -38,7 +38,7 @@ const getDataDocument = async (filter) => {
       document.documentDate = moment(document.documentDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.receiveDate = moment(document.receiveDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.toBookDate = moment(document.toBookDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
-      document.deadline = moment(document.deadline, 'YYYY/MM/DD').format('DD/MM/YYYY');
+      document.deadline = document.deadline ? moment(document.deadline, 'YYYY/MM/DD').format('DD/MM/YYYY') : null;
       const signers = await crm.findOne({ code: 'nguoiki' }, 'data').lean();
       signers.data.map((signer) => {
         if (signer.title === document.signer.value) {
