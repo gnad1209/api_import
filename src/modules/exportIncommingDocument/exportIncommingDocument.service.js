@@ -62,9 +62,10 @@ const getDataDocument = async (filter) => {
  */
 const getPathFile = async (ids) => {
   try {
-    const files = await fileManager.find({ _id: { $in: ids } }, 'mid name parentPath realName fullPath');
+    const files = await fileManager.find({ _id: { $in: ids } }, 'mid name clientId parentPath realName fullPath');
     let arrPath = [];
     files.map((file) => {
+      console.log(path.join(__dirname, '..', '..', 'uploads', file.clientId, file.realName));
       arrPath.push(file.fullPath);
     });
     return arrPath;

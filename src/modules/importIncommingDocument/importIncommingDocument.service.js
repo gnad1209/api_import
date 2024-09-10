@@ -39,14 +39,17 @@ const unzipFile = async (folderPath, filePath) => {
       return { status: 400, message: 'Không tìm thấy file cần giải nén!' };
     }
     // Hàm giải nén file
-    await fs
-      .createReadStream(filePath)
-      .pipe(unzipper.Extract({ path: folderPath }))
-      .promise();
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(filePath)
+        .pipe(unzipper.Extract({ path: folderPath }))
+        .on('close', resolve) // Kết thúc khi giải nén thành công
+        .on('error', reject); // Bắt lỗi trong quá trình giải nén
+    });
     //xóa file zip
     await deleteFolderAndContent(filePath);
     return true;
   } catch (error) {
+    console.log(error);
     return false;
   }
 };
