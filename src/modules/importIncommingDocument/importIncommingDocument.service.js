@@ -258,7 +258,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           {
             status: 1,
             toBook: rowData.toBook,
-            receiverUnit: employee.organizationUnit.organizationUnitId,
+            receiverUnit: '66dbcff337232cbd8902a399',
             senderUnit: rowData.senderUnit,
             documentDate: {
               $gte: moment(rowData.documentDate, 'DD/MM/YYYY').startOf('day').toDate(),
@@ -268,6 +268,8 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           '_id',
         )
         .lean();
+      console.log(documentIncomming);
+
       if (documentIncomming) {
         const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
         if (!allErrors.some((error) => error.message === errorMessage)) {

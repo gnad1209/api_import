@@ -158,13 +158,15 @@ const createZipFile = async (arrPath, outputFilePath, arrName) => {
     // Thêm từng file vào archive
     arrPath.forEach((filePath, index) => {
       if (fs.existsSync(filePath)) {
-        if (arrName.length < 1) {
-          console.log(filePath);
+        // nén file zip cuối cùng
+        if (arrName.length > 1) {
+          const fileName = arrName[index];
+          archive.file(filePath, { name: fileName });
+        } else {
+          // nén file đính kèm
           const fileName = `${index}_${path.basename(filePath)}`;
           archive.file(filePath, { name: fileName });
         }
-        const fileName = arrName[index];
-        archive.file(filePath, { name: fileName });
       } else {
         console.log(`path ${filePath} k ton tai`);
       }
