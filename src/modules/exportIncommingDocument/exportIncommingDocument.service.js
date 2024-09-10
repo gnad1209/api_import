@@ -135,7 +135,7 @@ const createExelFile = async (documents) => {
  * @param {*} config Cấu hình tùy chọn
  * @returns trả về những bản ghi mới từ file excel
  */
-const createZipFile = async (arrPath, outputFilePath) => {
+const createZipFile = async (arrPath, outputFilePath, arrName) => {
   return new Promise((resolve, reject) => {
     const output = fs.createWriteStream(outputFilePath);
     const archive = archiver('zip', {
@@ -156,9 +156,14 @@ const createZipFile = async (arrPath, outputFilePath) => {
     archive.pipe(output);
 
     // Thêm từng file vào archive
-    arrPath.forEach((filePath) => {
+    arrPath.forEach((filePath, index) => {
       if (fs.existsSync(filePath)) {
-        const fileName = path.basename(filePath);
+        if (arrName.length < 1) {
+          console.log(filePath);
+          const fileName = `${index}_${path.basename(filePath)}`;
+          archive.file(filePath, { name: fileName });
+        }
+        const fileName = arrName[index];
         archive.file(filePath, { name: fileName });
       } else {
         console.log(`path ${filePath} k ton tai`);

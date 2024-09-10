@@ -217,6 +217,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       rowData.deadline = date.deadline;
       rowData.kanbanStatus = 'receive';
       rowData.receiverUnit = employee.organizationUnit.organizationUnitId;
+      rowData.receiverUnit = '66dbcff337232cbd8902a399';
       rowData.createdBy = employee._id;
 
       // Validate dữ liệu từ file excel

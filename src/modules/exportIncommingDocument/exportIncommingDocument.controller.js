@@ -56,21 +56,24 @@ const exportDataInZipFile = async (req, res, next) => {
     const outputFilePath = path.join(__dirname, '..', '..', 'files', `attachments_${Date.now() * 1}.zip`);
     const finalZipFile = path.join(__dirname, '..', '..', 'files', `data_export.zip`);
     if (attachments) {
-      const checkAttachmentFile = await service.createZipFile(attachments, outputFilePath);
-      if (checkAttachmentFile.status === 200) {
-        // tạo file excel và file zip tệp đính kèm
-        await service.createZipFile([pathExcelCreated, outputFilePath], finalZipFile);
-      }
+      const checkAttachmentFile = await service.createZipFile(attachments, outputFilePath, []);
+      // if (checkAttachmentFile.status === 200) {
+      //   // tạo file excel và file zip tệp đính kèm
+      //   await service.createZipFile([pathExcelCreated, outputFilePath], finalZipFile, [
+      //     'files.xlsx',
+      //     'attachments.zip',
+      //   ]);
+      // }
     }
 
-    await Promise.all([deleteFolderAndContent(pathExcelCreated), deleteFolderAndContent(outputFilePath)]);
-    res.download(finalZipFile, async (err) => {
+    // await Promise.all([deleteFolderAndContent(pathExcelCreated), deleteFolderAndContent(outputFilePath)]);
+    res.download(outputFilePath, async (err) => {
       if (err) {
         console.error(err);
         return res.status(500).send('Lỗi tải file'); // Đảm bảo chỉ gửi một lần
       }
       // Nếu cần, xóa file zip sau khi tải xong
-      await deleteFolderAndContent(finalZipFile);
+      await deleteFolderAndContent(outputFilePath);
     });
   } catch (e) {
     return res.status(400).json(e);
