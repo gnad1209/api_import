@@ -217,7 +217,6 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       rowData.deadline = date.deadline;
       rowData.kanbanStatus = 'receive';
       rowData.receiverUnit = employee.organizationUnit.organizationUnitId;
-      rowData.receiverUnit = '66dbcff337232cbd8902a399';
       rowData.createdBy = employee._id;
 
       // Validate dữ liệu từ file excel
@@ -258,18 +257,16 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
           {
             status: 1,
             toBook: rowData.toBook,
-            receiverUnit: '66dbcff337232cbd8902a399',
+            receiverUnit: employee.organizationUnit.organizationUnitId,
             senderUnit: rowData.senderUnit,
             documentDate: {
-              $gte: moment(rowData.documentDate, 'DD/MM/YYYY').startOf('day').toDate(),
-              $lte: moment(rowData.documentDate, 'DD/MM/YYYY').endOf('day').toDate(),
+              $gte: moment(rowData.documentDate, 'YYYY/MM/DD').startOf('day').toDate(),
+              $lte: moment(rowData.documentDate, 'YYYY/MM/DD').endOf('day').toDate(),
             },
           },
           '_id',
         )
         .lean();
-      console.log(documentIncomming);
-
       if (documentIncomming) {
         const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
         if (!allErrors.some((error) => error.message === errorMessage)) {
