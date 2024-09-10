@@ -1,6 +1,6 @@
 const service = require('./importIncommingDocument.service');
 const path = require('path');
-const { deleteFolderAndContent } = require('../config/common');
+const { deleteFolderAndContent, existsPath } = require('../config/common');
 const fsPromises = require('fs').promises;
 
 const importDataInZipFile = async (req, res, next) => {

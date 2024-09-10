@@ -55,11 +55,12 @@ const exportDataInZipFile = async (req, res, next) => {
 
     const outputFilePath = path.join(__dirname, '..', '..', 'files', `attachments_${Date.now() * 1}.zip`);
     const finalZipFile = path.join(__dirname, '..', '..', 'files', `data_export.zip`);
-
-    // tạo file excel và file zip tệp đính kèm
-    const checkAttachmentFile = await service.createZipFile(attachments, outputFilePath);
-    if (checkAttachmentFile.status === 200) {
-      await service.createZipFile([pathExcelCreated, outputFilePath], finalZipFile);
+    if (attachments) {
+      const checkAttachmentFile = await service.createZipFile(attachments, outputFilePath);
+      if (checkAttachmentFile.status === 200) {
+        // tạo file excel và file zip tệp đính kèm
+        await service.createZipFile([pathExcelCreated, outputFilePath], finalZipFile);
+      }
     }
 
     await Promise.all([deleteFolderAndContent(pathExcelCreated), deleteFolderAndContent(outputFilePath)]);

@@ -5,9 +5,9 @@ const incommingDocument = require('../models/incommingDocument.model');
 const crm = require('../models/crmSource.model');
 const Employee = require('../models/employee.model');
 
-// const fileManager = require('../models/fileManager.model'); // model test local
+const fileManager = require('../models/fileManager.model'); // model test local
 const SenderUnit = require('../models/senderUnit.model');
-const fileManager = require('../../server/api/fileManager/fileManager.model');
+// const fileManager = require('../../server/api/fileManager/fileManager.model');
 const Client = require('../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
@@ -128,6 +128,9 @@ const checkStorage = async (objPath, clientId, folderToSave) => {
 const getDataFromAttachment = async (pathAttachmentsPath) => {
   try {
     // kiểm tra path tồn tại không
+    if (!pathAttachmentsPath) {
+      throw new Error('Không nhận đc path file đính kèm');
+    }
     const checkPathAttachments = await existsPath(pathAttachmentsPath);
     if (!checkPathAttachments) {
       return { status: 400, message: 'Không tìm thấy file cần lấy thông tin' };
