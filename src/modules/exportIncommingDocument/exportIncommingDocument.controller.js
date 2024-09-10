@@ -53,7 +53,7 @@ const exportDataInZipFile = async (req, res, next) => {
     //lấy path của các file đính kèm
     attachments = await service.getPathFile(documentFiles.resultFile);
 
-    const outputFilePath = path.join(__dirname, '..', '..', 'files', `attachments_${Date.now()}.zip`);
+    const outputFilePath = path.join(__dirname, '..', '..', 'files', `attachments_${Date.now() * 1}.zip`);
     const finalZipFile = path.join(__dirname, '..', '..', 'files', `data_export.zip`);
 
     // tạo file excel và file zip tệp đính kèm

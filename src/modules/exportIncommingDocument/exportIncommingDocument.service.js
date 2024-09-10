@@ -22,11 +22,11 @@ const getDataDocument = async (filter) => {
         'toBook abstractNote urgencyLevel senderUnit files secondBook documentType documentField receiveMethod privateLevel documentDate receiveDate toBookDate deadline signer',
       )
       .lean();
-    if (documents?.length < 1) {
-      return;
+    if (documents.length < 1) {
+      throw new Error('Không tìm thấy bản ghi cần export');
     }
     let resultFile = [];
-    documents.map(async (document) => {
+    for (const document of documents) {
       if (!document.files) {
         document.files = null;
       } else {
@@ -35,17 +35,19 @@ const getDataDocument = async (filter) => {
         });
         document.files = document.files.map((file) => file.name).join(', ');
       }
+      const signers = await crm.findOne({ code: 'nguoiki' }, 'data').lean();
+      if (document.signer.title) {
+        signers.data.map((signer, index) => {
+          if (signer.title.toString() && signer.title.trim() === document.signer.title.trim()) {
+            document.signer = signer.value;
+          }
+        });
+      }
       document.documentDate = moment(document.documentDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.receiveDate = moment(document.receiveDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.toBookDate = moment(document.toBookDate, 'YYYY/MM/DD').format('DD/MM/YYYY');
       document.deadline = document.deadline ? moment(document.deadline, 'YYYY/MM/DD').format('DD/MM/YYYY') : null;
-      const signers = await crm.findOne({ code: 'nguoiki' }, 'data').lean();
-      signers.data.map((signer) => {
-        if (signer.title === document.signer.value) {
-          document.signer = signer.value;
-        }
-      });
-    });
+    }
     return { documents, resultFile };
   } catch (e) {
     return e;
@@ -60,7 +62,7 @@ const getDataDocument = async (filter) => {
  */
 const getPathFile = async (ids) => {
   try {
-    const files = await fileManager.find({ _id: { $in: ids } }, 'mid name fullPath');
+    const files = await fileManager.find({ _id: { $in: ids } }, 'mid name parentPath realName fullPath');
     let arrPath = [];
     files.map((file) => {
       arrPath.push(file.fullPath);
@@ -83,18 +85,18 @@ const createExelFile = async (documents) => {
     const worksheet = workbook.addWorksheet('Sheet 1');
     worksheet.columns = [
       { header: 'Số văn bản(*)', key: 'toBook', width: 10 },
-      { header: 'Trích yếu', key: 'abstractNote', width: 30 },
+      { header: 'Trích yếu(*)', key: 'abstractNote', width: 30 },
       { header: 'Độ khẩn', key: 'urgencyLevel', width: 10 },
-      { header: 'Đơn vị gửi', key: 'senderUnit', width: 15 },
+      { header: 'Đơn vị gửi(*)', key: 'senderUnit', width: 15 },
       { header: 'files', key: 'files', width: 10 },
       { header: 'Sổ phụ', key: 'secondBook', width: 10 },
       { header: 'Loại văn bản', key: 'documentType', width: 10 },
       { header: 'Lĩnh vực', key: 'documentField', width: 10 },
       { header: 'Phương thức nhận', key: 'receiveMethod', width: 10 },
       { header: 'Độ mật', key: 'privateLevel', width: 10 },
-      { header: 'Ngày văn bản', key: 'documentDate', width: 15 },
-      { header: 'Ngày nhận văn bản', key: 'receiveDate', width: 15 },
-      { header: 'Ngày vào sổ', key: 'toBookDate', width: 15 },
+      { header: 'Ngày văn bản(*)', key: 'documentDate', width: 15 },
+      { header: 'Ngày nhận văn bản(*)', key: 'receiveDate', width: 15 },
+      { header: 'Ngày vào sổ(*)', key: 'toBookDate', width: 15 },
       { header: 'Hạn được giao', key: 'deadline', width: 15 },
       { header: 'Người ký', key: 'signer', width: 10 },
     ];
@@ -155,8 +157,12 @@ const createZipFile = async (arrPath, outputFilePath) => {
 
     // Thêm từng file vào archive
     arrPath.forEach((filePath) => {
-      const fileName = path.basename(filePath);
-      archive.file(filePath, { name: fileName });
+      if (fs.existsSync(filePath)) {
+        const fileName = path.basename(filePath);
+        archive.file(filePath, { name: fileName });
+      } else {
+        console.log(`path ${filePath} k ton tai`);
+      }
     });
 
     // Kết thúc quá trình nén

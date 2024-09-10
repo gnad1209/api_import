@@ -2,12 +2,12 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const incommingDocument = require('../models/incommingDocument.model');
-// const Document = require('../models/document.model');
 const crm = require('../models/crmSource.model');
 const Employee = require('../models/employee.model');
-const fileManager = require('../models/fileManager.model');
+
+// const fileManager = require('../models/fileManager.model'); // model test local
 const SenderUnit = require('../models/senderUnit.model');
-// const fileManager = require('../../server/api/fileManager/fileManager.model');
+const fileManager = require('../../server/api/fileManager/fileManager.model');
 const Client = require('../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
@@ -274,7 +274,7 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
 
       const senderUnit = await SenderUnit.findOne({ value: rowData.senderUnit, status: 1 }, '_id').lean();
 
-      const signer = await crm.findOne({ code: 'nguoiki' }, '_id data');
+      const signer = await crm.findOne({ code: 'nguoiki', status: 1 }, '_id data');
       signer.data.map((item) => {
         if (item.value === rowData.signer) {
           rowData.signer = { title: item.title, value: item._id };
@@ -567,7 +567,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
             parentPath: folderToSave,
             username: username,
             isFile: true,
-            realName: `${folderToSave}/${file.name}`,
+            realName: `${file.name}`,
             clientId: clientId,
             code: code,
             nameRoot: `${folderToSave}/${file.name}`,

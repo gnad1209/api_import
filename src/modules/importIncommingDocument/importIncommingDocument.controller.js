@@ -1,6 +1,6 @@
 const service = require('./importIncommingDocument.service');
 const path = require('path');
-const { deleteFolderAndContent, existsPath } = require('../config/common');
+const { deleteFolderAndContent } = require('../config/common');
 const fsPromises = require('fs').promises;
 
 const importDataInZipFile = async (req, res, next) => {
@@ -21,7 +21,7 @@ const importDataInZipFile = async (req, res, next) => {
       existsPath(path.join(baseDir, 'uploads')),
       existsPath(path.join(baseDir, 'uploads', clientId)),
     ]);
-
+    //tạo folder chứa file tải lên
     if (!checkUploadFolder) {
       await fsPromises.mkdir(path.join(baseDir, 'uploads'));
     }
