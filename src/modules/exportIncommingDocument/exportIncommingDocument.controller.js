@@ -57,16 +57,16 @@ const exportDataInZipFile = async (req, res, next) => {
     const finalZipFile = path.join(__dirname, '..', '..', 'files', `data_export.zip`);
     if (attachments) {
       const checkAttachmentFile = await service.createZipFile(attachments, outputFilePath, []);
-      // if (checkAttachmentFile.status === 200) {
-      //   // tạo file excel và file zip tệp đính kèm
-      //   await service.createZipFile([pathExcelCreated, outputFilePath], finalZipFile, [
-      //     'files.xlsx',
-      //     'attachments.zip',
-      //   ]);
-      // }
+      if (checkAttachmentFile.status === 200) {
+        // tạo file excel và file zip tệp đính kèm
+        await service.createZipFile([pathExcelCreated, outputFilePath], finalZipFile, [
+          'files.xlsx',
+          'attachments.zip',
+        ]);
+      }
     }
 
-    // await Promise.all([deleteFolderAndContent(pathExcelCreated), deleteFolderAndContent(outputFilePath)]);
+    await Promise.all([deleteFolderAndContent(pathExcelCreated), deleteFolderAndContent(outputFilePath)]);
     res.download(outputFilePath, async (err) => {
       if (err) {
         console.error(err);
