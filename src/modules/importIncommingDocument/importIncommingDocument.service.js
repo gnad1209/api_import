@@ -2,12 +2,12 @@ const path = require('path');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const incommingDocument = require('../models/incommingDocument.model');
-// const Document = require('../models/document.model');
 const crm = require('../models/crmSource.model');
 const Employee = require('../models/employee.model');
-const fileManager = require('../models/fileManager.model');
+
+// const fileManager = require('../models/fileManager.model'); // model test local
 const SenderUnit = require('../models/senderUnit.model');
-// const fileManager = require('../../server/api/fileManager/fileManager.model');
+const fileManager = require('../../server/api/fileManager/fileManager.model');
 const Client = require('../models/client.model');
 const unzipper = require('unzipper');
 const mime = require('mime-types');
@@ -39,14 +39,19 @@ const unzipFile = async (folderPath, filePath) => {
       return { status: 400, message: 'Không tìm thấy file cần giải nén!' };
     }
     // Hàm giải nén file
-    await fs
-      .createReadStream(filePath)
-      .pipe(unzipper.Extract({ path: folderPath }))
-      .promise();
+    // await new Promise((resolve, reject) => {
+    //   fs.createReadStream(filePath)
+    //     .pipe(unzipper.Extract({ path: folderPath }))
+    //     .on('close', resolve) // Kết thúc khi giải nén thành công
+    //     .on('error', reject); // Bắt lỗi trong quá trình giải nén
+    // });
+    const directory = await unzipper.Open.file(filePath);
+    await directory.extract({ path: folderPath });
     //xóa file zip
     await deleteFolderAndContent(filePath);
     return true;
   } catch (error) {
+    console.log(error);
     return false;
   }
 };
@@ -128,6 +133,9 @@ const checkStorage = async (objPath, clientId, folderToSave) => {
 const getDataFromAttachment = async (pathAttachmentsPath) => {
   try {
     // kiểm tra path tồn tại không
+    if (!pathAttachmentsPath) {
+      throw new Error('Không nhận đc path file đính kèm');
+    }
     const checkPathAttachments = await existsPath(pathAttachmentsPath);
     if (!checkPathAttachments) {
       return { status: 400, message: 'Không tìm thấy file cần lấy thông tin' };
@@ -207,6 +215,11 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
       const row = dataExcel[i];
       if (row.length === 0) continue;
       const rowData = extractRowData(row);
+      const date = convertData(rowData);
+      rowData.documentDate = date.documentDate;
+      rowData.receiveDate = date.receiveDate;
+      rowData.toBookDate = date.toBookDate;
+      rowData.deadline = date.deadline;
       rowData.kanbanStatus = 'receive';
       rowData.receiverUnit = employee.organizationUnit.organizationUnitId;
       rowData.createdBy = employee._id;
@@ -252,24 +265,24 @@ const processData = async (dataExcel, dataAttachments, folderToSave, clientId, u
             receiverUnit: employee.organizationUnit.organizationUnitId,
             senderUnit: rowData.senderUnit,
             documentDate: {
-              $gte: moment(rowData.documentDate, 'DD/MM/YYYY').startOf('day').toDate(),
-              $lte: moment(rowData.documentDate, 'DD/MM/YYYY').endOf('day').toDate(),
+              $gte: moment(rowData.documentDate, 'YYYY/MM/DD').startOf('day').toDate(),
+              $lte: moment(rowData.documentDate, 'YYYY/MM/DD').endOf('day').toDate(),
             },
           },
           '_id',
         )
         .lean();
-      // if (documentIncomming) {
-      //   const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
-      //   if (!allErrors.some((error) => error.message === errorMessage)) {
-      //     errorDocuments.push({ status: 400, message: errorMessage });
-      //   }
-      //   continue;
-      // }
+      if (documentIncomming) {
+        const errorMessage = `Đã tồn tại văn bản số ${i + 1}`;
+        if (!allErrors.some((error) => error.message === errorMessage)) {
+          errorDocuments.push({ status: 400, message: errorMessage });
+        }
+        continue;
+      }
 
       const senderUnit = await SenderUnit.findOne({ value: rowData.senderUnit, status: 1 }, '_id').lean();
 
-      const signer = await crm.findOne({ code: 'nguoiki' }, '_id data');
+      const signer = await crm.findOne({ code: 'nguoiki', status: 1 }, '_id data');
       signer.data.map((item) => {
         if (item.value === rowData.signer) {
           rowData.signer = { title: item.title, value: item._id };
@@ -405,6 +418,7 @@ const validateRequiredFields = async (fields, rowNumber) => {
           code: {
             $in: ['S27', 'S20', 'S21', 'S19', 'S26', 'nguoiki'],
           },
+          status: 1,
         },
         'code data title',
       )
@@ -480,52 +494,44 @@ const validateRequiredFields = async (fields, rowNumber) => {
 const validateDates = (documentDate, receiveDate, toBookDate, deadline, rowNumber) => {
   try {
     const errors = [];
-    // Đổi định dạng các ngày về YYYY/MM/DD
-    const docDate = moment(documentDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
-    const recDate = moment(receiveDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
-    const toBkDate = moment(toBookDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
-    let dlDate;
-    if (deadline) {
-      dlDate = moment(deadline, 'DD/MM/YYYY').format('YYYY/MM/DD');
-    }
-
     const today = moment().format('YYYY/MM/DD');
 
-    if (!moment(docDate, 'YYYY/MM/DD', true).isValid()) {
+    if (!moment(documentDate, 'YYYY/MM/DD', true).isValid()) {
       errors.push({ status: 400, message: `Ngày tài liệu không hợp lệ - dòng thứ ${rowNumber}` });
     }
-    if (!moment(recDate, 'YYYY/MM/DD', true).isValid()) {
+    if (!moment(receiveDate, 'YYYY/MM/DD', true).isValid()) {
       errors.push({ status: 400, message: `Ngày nhận không hợp lệ - dòng thứ ${rowNumber}` });
     }
-    if (!moment(toBkDate, 'YYYY/MM/DD', true).isValid()) {
+    if (!moment(toBookDate, 'YYYY/MM/DD', true).isValid()) {
       errors.push({ status: 400, message: `Ngày gửi vào sổ không hợp lệ - dòng thứ ${rowNumber}` });
     }
-    if (deadline && !moment(dlDate, 'YYYY/MM/DD', true).isValid()) {
+
+    if (deadline && !moment(deadline, 'YYYY/MM/DD', true).isValid()) {
       errors.push({ status: 400, message: `Hạn chót không hợp lệ - dòng thứ ${rowNumber}` });
     }
 
-    if (moment(docDate).isAfter(today)) {
+    if (moment(documentDate).isAfter(today)) {
       errors.push({
         status: 400,
         message: `Ngày tài liệu không được lớn hơn ngày hiện tại - dòng thứ ${rowNumber}`,
       });
     }
 
-    if (moment(recDate).isBefore(docDate)) {
+    if (moment(receiveDate).isBefore(documentDate)) {
       errors.push({
         status: 400,
         message: `Ngày nhận không được nhỏ hơn ngày tài liệu - dòng thứ ${rowNumber}`,
       });
     }
 
-    if (moment(toBkDate).isBefore(docDate)) {
+    if (moment(toBookDate).isBefore(documentDate)) {
       errors.push({
         status: 400,
         message: `Ngày gửi vào sổ không được nhỏ hơn ngày tài liệu - dòng thứ ${rowNumber}`,
       });
     }
 
-    if (deadline && moment(dlDate).isBefore(today)) {
+    if (deadline && moment(deadline).isBefore(today)) {
       errors.push({
         status: 400,
         message: `deadline  không được nhỏ hơn ngày hiện tại - dòng thứ ${rowNumber}`,
@@ -560,7 +566,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
       const arrFileAttachments = await hasFileNameInArray(dataAttachments, arrFiles);
       // lặp mảng file vừa lấy được để thêm mới vào db
       for (const file of arrFileAttachments) {
-        let existingFile = await fileManager.findOne({ name: file.name, fullPath: file.fullPath });
+        let existingFile = await fileManager.findOne({ name: file.name, fullPath: file.fullPath, status: 1 });
 
         if (!existingFile) {
           // Nếu file chưa tồn tại, tạo một bản ghi mới
@@ -569,7 +575,7 @@ const processAttachments = async (dataAttachments, arrFiles, folderToSave, clien
             parentPath: folderToSave,
             username: username,
             isFile: true,
-            realName: `${folderToSave}/${file.name}`,
+            realName: `${file.name}`,
             clientId: clientId,
             code: code,
             nameRoot: `${folderToSave}/${file.name}`,
@@ -627,13 +633,23 @@ const createDocument = (rowData, resultFile) => {
   }
 };
 
-// const convertData = () => {
-//   try {
-
-//   } catch (e) {
-//     return e;
-//   }
-// };
+const convertData = (rowData) => {
+  try {
+    if (!rowData) {
+      return;
+    }
+    const documentDate = moment(rowData.documentDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
+    const receiveDate = moment(rowData.receiveDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
+    const toBookDate = moment(rowData.toBookDate, 'DD/MM/YYYY').format('YYYY/MM/DD');
+    let deadline;
+    if (rowData.deadline) {
+      deadline = moment(rowData.deadline, 'DD/MM/YYYY').format('YYYY/MM/DD');
+    }
+    return { documentDate, receiveDate, toBookDate, deadline };
+  } catch (e) {
+    return e;
+  }
+};
 
 module.exports = {
   unzipFile,

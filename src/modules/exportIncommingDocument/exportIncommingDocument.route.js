@@ -4,8 +4,8 @@ const exportIncommingDocumentCtrl = require('./exportIncommingDocument.controlle
 const multer = require('multer');
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // cb(null, `${global.appRoot}/files/`);
-    cb(null, `src/files`);
+    cb(null, `${global.appRoot}/files/`);
+    // cb(null, `src/files`);
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now() * 1}___${file.originalname}`);

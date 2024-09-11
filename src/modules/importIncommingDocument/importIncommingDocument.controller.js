@@ -21,7 +21,7 @@ const importDataInZipFile = async (req, res, next) => {
       existsPath(path.join(baseDir, 'uploads')),
       existsPath(path.join(baseDir, 'uploads', clientId)),
     ]);
-
+    //tạo folder chứa file tải lên
     if (!checkUploadFolder) {
       await fsPromises.mkdir(path.join(baseDir, 'uploads'));
     }
@@ -39,12 +39,12 @@ const importDataInZipFile = async (req, res, next) => {
     if (!objPath) return res.status(400).json({ status: 0, message: 'Không tìm được file sau khi giải nén' });
 
     // Kiểm tra dung lượng còn lại của client
-    if (clientId) {
-      const checkStorage = await service.checkStorage(objPath, clientId, folderToSave);
-      if (!checkStorage) {
-        return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
-      }
-    }
+    // if (clientId) {
+    //   const checkStorage = await service.checkStorage(objPath, clientId, folderToSave);
+    //   if (!checkStorage) {
+    //     return res.status(400).json({ status: 0, message: 'Dung lượng ko đủ để tải file' });
+    //   }
+    // }
 
     //giải nén file đính kèm
     let extractFileAttachment = null;
@@ -76,7 +76,7 @@ const importDataInZipFile = async (req, res, next) => {
       return res.status(400).json(data);
     }
 
-    return res.status(200).json({ errors: data.errors, documents: data.documents });
+    return res.status(200).json({ status: 1, errors: data.errors, documents: data.documents });
   } catch (e) {
     console.log('ERROR: ', e);
     return res.status(400).json(e);
