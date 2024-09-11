@@ -68,9 +68,28 @@ const exportDataInZipFile = async (req, res, next) => {
     // tạo file excel và file zip tệp đính kèm
     const checkAttachmentFile = await service.createZipFile(attachments.arrPath, attachments.arrName, outputFilePath);
     if (checkAttachmentFile.status === 200) {
-      await service.createZipFile([pathExcel, outputFilePath], [], downloadsDir);
+      await service.createZipFile([pathExcel, outputFilePath], [], finalZipFile);
     }
+    // Kiểm tra file có tồn tại không
+    if (fs.existsSync(finalZipFile)) {
+      // Thiết lập header để trả về file .zip
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename=data.zip');
 
+      // Sử dụng file stream để đọc và gửi file .zip về response
+      const fileStream = fs.createReadStream(finalZipFile);
+
+      fileStream.pipe(res);
+
+      // Xử lý sự kiện lỗi khi đọc file
+      fileStream.on('error', (err) => {
+        console.error('Error reading zip file:', err);
+        res.status(500).send('An error occurred while reading the zip file');
+      });
+    } else {
+      // Xử lý trường hợp file không tồn tại
+      res.status(404).send('File not found');
+    }
     // xóa file tạm
     deleteFolderAndContent(pathExcel);
     deleteFolderAndContent(outputFilePath);

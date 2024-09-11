@@ -175,9 +175,36 @@ const createZipFile = async (arrPath, arrName, outputFilePath) => {
   }
 };
 
+const downloadFileZip = (outputFilePath) => {
+  try {
+    const outputFilePath = path.join(__dirname, 'output.zip');
+    s;
+
+    createZip(outputFilePath, arrPath, arrName)
+      .then(() => {
+        res.download(outputFilePath, (err) => {
+          if (err) {
+            console.error('Error downloading the file:', err);
+            res.status(500).send('Error downloading the file');
+          } else {
+            // Xóa file zip sau khi tải xong nếu cần
+            fs.unlinkSync(outputFilePath);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('Error creating zip:', err);
+        res.status(500).send('Error creating zip file');
+      });
+  } catch (e) {
+    return e;
+  }
+};
+
 module.exports = {
   getDataDocument,
   getPathFile,
   createExelFile,
   createZipFile,
+  downloadFileZip,
 };
